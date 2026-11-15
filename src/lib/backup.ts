@@ -93,17 +93,15 @@ export async function importBackup(raw: unknown) {
       const existing = await tx.objectStore('documents').get(d.id);
       if (existing && existing.pageCount !== d.pageCount)
         throw new Error('Backup document page count conflicts with local data.');
-      await tx
-        .objectStore('documents')
-        .put(
-          existing
-            ? {
-                ...existing,
-                progress: d.lastOpened > existing.lastOpened ? d.progress : existing.progress,
-                lastOpened: Math.max(d.lastOpened, existing.lastOpened),
-              }
-            : { ...d, available: false },
-        );
+      await tx.objectStore('documents').put(
+        existing
+          ? {
+              ...existing,
+              progress: d.lastOpened > existing.lastOpened ? d.progress : existing.progress,
+              lastOpened: Math.max(d.lastOpened, existing.lastOpened),
+            }
+          : { ...d, available: false },
+      );
     }
     for (const a of b.annotations) {
       const old = await tx.objectStore('annotations').get(a.id);
