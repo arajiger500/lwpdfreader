@@ -1,0 +1,10 @@
+node_modules/
+dist/
+core/target/
+src/wasm/
+public/pdf/
+public/licenses/
+package-lock.json
+tests/fixtures/
+test-results/
+test-results-heavy/
