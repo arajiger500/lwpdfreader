@@ -6,3 +6,6 @@ playwright-report/
 test-results/
 *.log
 .DS_Store
+public/pdf/
+tests/fixtures/heavy.pdf
+test-results-heavy/
