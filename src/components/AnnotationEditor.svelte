@@ -18,16 +18,34 @@
   let status = $state('Saved');
   let timer: ReturnType<typeof setTimeout>;
   let dirty = false;
-  async function save() {
+  let saving: Promise<boolean> | undefined;
+  let deleting = false;
+  export function flush(): Promise<boolean> {
     clearTimeout(timer);
-    if (!dirty) return;
-    dirty = false;
-    status = 'Saving…';
-    const ok = await onSave({ ...annotation, note, updatedAt: Date.now() });
-    status = ok ? 'Saved' : 'Not saved — retry';
-    if (!ok) dirty = true;
+    if (saving) return saving;
+    if (!dirty || deleting) return Promise.resolve(true);
+    saving = drain().finally(() => {
+      saving = undefined;
+    });
+    return saving;
   }
+  async function drain(): Promise<boolean> {
+    while (dirty && !deleting) {
+      dirty = false;
+      status = 'Saving…';
+      const ok = await onSave({ ...annotation, note, updatedAt: Date.now() });
+      if (!ok) {
+        dirty = !deleting;
+        status = 'Not saved — retry';
+        return false;
+      }
+    }
+    status = 'Saved';
+    return true;
+  }
+  const save = () => flush();
   function change() {
+    deleting = false;
     dirty = true;
     status = 'Unsaved';
     clearTimeout(timer);
@@ -46,7 +64,7 @@
   });
   onDestroy(() => {
     clearTimeout(timer);
-    if (dirty) void save();
+    if (dirty && !deleting) void save();
   });
 </script>
 
@@ -61,9 +79,8 @@
     ><button
       class="icon-button"
       aria-label="Close annotation editor"
-      onclick={() => {
-        void save();
-        onClose();
+      onclick={async () => {
+        if (await flush()) onClose();
       }}><Icon name="close" size={17} /></button
     >
   </div>
@@ -73,7 +90,9 @@
           class={'swatch ' + color}
           class:chosen={annotation.color === color}
           aria-label={'Change highlight to ' + color}
-          onclick={() => onSave({ ...annotation, color, note, updatedAt: Date.now() })}
+          onclick={async () => {
+            if (await flush()) await onSave({ ...annotation, color, note, updatedAt: Date.now() });
+          }}
         ></button>{/each}
     </div>{/if}
   <label class="field-label" for="annotation-note"
@@ -91,9 +110,11 @@
   <div class="editor-footer">
     <button
       class="text-button danger"
-      onclick={() => {
-        dirty = false;
+      onclick={async () => {
+        deleting = true;
         clearTimeout(timer);
+        await saving;
+        dirty = false;
         onDelete(annotation);
       }}><Icon name="trash" size={16} /> Delete</button
     ><button class="save-status" onclick={() => void save()} aria-label="Retry saving note"

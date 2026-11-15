@@ -25,6 +25,7 @@
     onTheme: () => void;
   } = $props();
   let viewer: Viewer;
+  let sidebarView = $state.raw<Sidebar | undefined>(undefined);
   let viewerReady = $state(false);
   let pageEditing = $state(false);
   let progress = $state<Progress>(untrack(() => ({ ...doc.progress })));
@@ -89,7 +90,8 @@
       onError(e);
     }
   }
-  function choose(a: Annotation | null) {
+  async function choose(a: Annotation | null) {
+    if (selected?.id !== a?.id && sidebarView && !(await sidebarView.flushEditor())) return;
     selected = a;
     if (a) sidebar = true;
   }
@@ -109,7 +111,7 @@
   async function addNote() {
     const a = newAnnotation(doc.id, progress.page, 'note');
     if (await persist(a)) {
-      choose(a);
+      await choose(a);
       await tick();
       document.getElementById('annotation-note')?.focus();
     }
@@ -135,6 +137,7 @@
   }
   async function backup() {
     try {
+      if (sidebarView && !(await sidebarView.flushEditor())) return;
       await writer.flush();
       downloadBackup(await exportBackup(doc.id), doc.name.replace(/\.pdf$/i, ''));
     } catch (e) {
@@ -143,6 +146,7 @@
   }
   async function back() {
     try {
+      if (sidebarView && !(await sidebarView.flushEditor())) return;
       await writer.flush();
       await onBack();
     } catch (e) {
@@ -254,7 +258,11 @@
       class:active={sidebar}
       aria-label="Toggle document sidebar"
       title="Contents, bookmarks & notes"
-      onclick={() => (sidebar = !sidebar)}><Icon name="sidebar" /></button
+      onclick={async () => {
+        if (sidebar && sidebarView && !(await sidebarView.flushEditor())) return;
+        sidebar = !sidebar;
+        if (!sidebar) selected = null;
+      }}><Icon name="sidebar" /></button
     >
   </header>
   <div class="reader-tools">
@@ -322,6 +330,7 @@
       onMessage={tell}
     />
     {#if sidebar}<Sidebar
+        bind:this={sidebarView}
         {annotations}
         {outline}
         {outlineLoading}
@@ -330,7 +339,8 @@
         onSave={persist}
         onDelete={remove}
         onJump={(p) => viewer.goTo(p)}
-        onClose={() => {
+        onClose={async () => {
+          if (!(await sidebarView?.flushEditor())) return;
           sidebar = false;
           selected = null;
         }}

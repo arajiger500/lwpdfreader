@@ -120,8 +120,29 @@ test('large PDF benchmark: bounded canvases and distant navigation', async ({ pa
     1450,
     ...Array.from({ length: 32 }, (_, i) => ((i * 173 + 91) % 1499) + 1),
   ];
-  const samples: { page: number; navigationMs: number; canvases: number; heap: number | null }[] =
-    [];
+  const cdp = await page.context().browser()!.newBrowserCDPSession();
+  async function browserRss() {
+    if (process.platform !== 'linux') return null;
+    const { processInfo } = await cdp.send('SystemInfo.getProcessInfo');
+    const values = await Promise.all(
+      processInfo.map(async (p) => {
+        try {
+          const status = await readFile(`/proc/${p.id}/status`, 'utf8');
+          return Number(status.match(/^VmRSS:\s+(\d+)/m)?.[1] ?? 0) * 1024;
+        } catch {
+          return 0;
+        }
+      }),
+    );
+    return values.reduce((sum, n) => sum + n, 0);
+  }
+  const samples: {
+    page: number;
+    navigationMs: number;
+    canvases: number;
+    heap: number | null;
+    browserRssBytes: number | null;
+  }[] = [];
   for (const n of destinations) {
     const start = Date.now();
     await jump(page, n);
@@ -129,6 +150,7 @@ test('large PDF benchmark: bounded canvases and distant navigation', async ({ pa
       page: n,
       navigationMs: Date.now() - start,
       canvases: await page.locator('.pdf-page canvas').count(),
+      browserRssBytes: await browserRss(),
       heap: await page.evaluate(
         () =>
           (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory
@@ -142,6 +164,11 @@ test('large PDF benchmark: bounded canvases and distant navigation', async ({ pa
   await expect(
     page.locator(`.pdf-page[data-page="${destinations.at(-1)}"][data-rendered="true"]`),
   ).toBeVisible();
+  const zoomMs = Date.now() - z;
+  await page.getByLabel('Back to library').click();
+  await page.waitForTimeout(1000);
+  const closedBrowserRssBytes = await browserRss();
+  await cdp.detach();
   const report = {
     date: new Date().toISOString(),
     browser: 'Chromium on Linux; original synthetic PDF, not real iPad hardware',
@@ -150,7 +177,8 @@ test('large PDF benchmark: bounded canvases and distant navigation', async ({ pa
     fixtureBytes: (await readFile('tests/fixtures/' + fixture)).length,
     firstPageMs: firstPage,
     reopenMs,
-    zoomMs: Date.now() - z,
+    zoomMs,
+    closedBrowserRssBytes,
     samples,
   };
   await writeFile(
@@ -340,4 +368,36 @@ test('page-relative resume survives reload and explicit library reopen', async (
   await page.getByLabel('Remove study.pdf', { exact: true }).click();
   await page.getByRole('button', { name: 'Remove document', exact: true }).click();
   await expect(page.locator('.document-row')).toHaveCount(0);
+});
+
+test('an unsaved note cannot be discarded by closing the sidebar or leaving the reader', async ({
+  page,
+}) => {
+  await importPdf(page);
+  await page.getByLabel('Add page note', { exact: true }).click();
+  await page.evaluate(() => {
+    const original = IDBObjectStore.prototype.put;
+    (window as unknown as { restoreWrites: () => void }).restoreWrites = () =>
+      (IDBObjectStore.prototype.put = original);
+    IDBObjectStore.prototype.put = function (value: unknown, key?: IDBValidKey) {
+      if (this.name === 'annotations') throw new DOMException('Test failure', 'QuotaExceededError');
+      return key === undefined ? original.call(this, value) : original.call(this, value, key);
+    };
+  });
+  await page.getByLabel('Your note', { exact: true }).fill('Keep this unsaved thought safe.');
+  await expect(page.getByLabel('Retry saving note')).toHaveText('Not saved — retry');
+  await page.getByLabel('Close sidebar', { exact: true }).click();
+  await expect(page.getByLabel('Your note', { exact: true })).toHaveValue(
+    'Keep this unsaved thought safe.',
+  );
+  await page.getByLabel('Back to library').click();
+  await expect(page.getByLabel('Your note', { exact: true })).toHaveValue(
+    'Keep this unsaved thought safe.',
+  );
+  await page.evaluate(() => (window as unknown as { restoreWrites: () => void }).restoreWrites());
+  await page.getByLabel('Dismiss error').click();
+  await page.getByLabel('Back to library').click();
+  await page.locator('.document-open').click();
+  await page.getByLabel('Toggle document sidebar').click();
+  await expect(page.locator('.sidebar')).toContainText('Keep this unsaved thought safe.');
 });

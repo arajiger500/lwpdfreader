@@ -26,6 +26,10 @@
     onClose: () => void;
     onExport: () => void;
   } = $props();
+  let editor = $state.raw<AnnotationEditor | undefined>(undefined);
+  export async function flushEditor() {
+    return editor ? editor.flush() : true;
+  }
   let tab = $state<'annotations' | 'contents' | 'bookmarks'>('annotations');
   let query = $state('');
   let limit = $state(200);
@@ -58,6 +62,7 @@
   </div>
   <div class="sidebar-body">
     {#if selected}{#key selected.id}<AnnotationEditor
+          bind:this={editor}
           annotation={selected}
           {onSave}
           {onDelete}
