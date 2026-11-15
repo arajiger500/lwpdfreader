@@ -36,7 +36,7 @@ Selected text provides a human-readable anchor along with page, content fingerpr
 
 ## Persistence and recovery
 
-IndexedDB database version 1 contains document metadata, Blob files, annotations (`by-document` index), and settings. `migrateDatabase` creates schema only for oldVersion < 1; future migrations extend that function and increment the opening version. Annotation format and backup envelope have independent explicit versions. Unsupported future backup versions fail closed.
+IndexedDB database version 2 contains document metadata, Blob files, annotations (`by-document` index), and settings. `migrateDatabase` creates the original stores for oldVersion < 1 and adds indexed ink and ink-deletion stores for oldVersion < 2, preserving all prior records. Annotation format and backup envelope have independent explicit versions. Unsupported future backup versions fail closed.
 
 All persistent mutations await transaction completion. Annotation UI state changes only after commit. Progress writes are serialized and coalesced without indefinite debounce starvation. Failed positions remain pending unless superseded; errors reach the UI. Notes save after 450 ms, blur and backgrounding. Progress additionally flushes on visibility changes, pagehide and document switching; unloading is not the sole persistence mechanism. Browser process termination may lose the final debounce interval or an uncommitted transaction; committed IDB transactions survive normal reloads.
 
@@ -49,3 +49,5 @@ The build precaches all required JS, CSS, worker MJS, core WASM, PDF decoding WA
 Note editing uses a shared in-flight save promise that drains new edits arriving during a write. Closing the editor/sidebar, selecting another annotation, returning to the library and exporting a backup await that promise. A failed save keeps the editor and its draft open for retry. Intentional deletion cancels draft autosaving so an outstanding save cannot recreate a deleted annotation. This protects normal navigation; force termination still cannot guarantee the final uncommitted characters.
 
 The page-number field maintains an editing draft separately from scroll-driven progress, and navigation controls wait until initial position restoration has completed. This prevents a late restore report from replacing a page number being typed.
+
+Vector ink rendering, gesture input, bounded per-page sessions, persisted undo/redo operations and the spatially indexed Rust eraser are described in [PENCIL.md](PENCIL.md). Explicit page jumps now request immediate progress persistence; ordinary scroll updates remain coalesced.

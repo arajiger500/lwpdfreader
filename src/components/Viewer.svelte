@@ -1,6 +1,9 @@
 <script lang="ts">
   import { onMount, tick, untrack } from 'svelte';
   import PdfPage from './PdfPage.svelte';
+  import { inkTouchPan } from '../lib/ink-touch';
+  import type { InkSession } from '../lib/ink-session';
+  import { writingTool, type InkSettings } from '../lib/ink-types';
   import type { PDFDocumentProxy } from '../lib/pdf';
   import type { PageViewport } from 'pdfjs-dist';
   import type { Annotation, Progress, Rect } from '../lib/types';
@@ -14,6 +17,8 @@
     annotations,
     regionMode,
     focus,
+    inkSession,
+    inkSettings,
     onProgress,
     onInitialized,
     onSelection,
@@ -27,7 +32,9 @@
     annotations: Annotation[];
     regionMode: boolean;
     focus: boolean;
-    onProgress: (p: Progress) => void;
+    inkSession: InkSession;
+    inkSettings: InkSettings;
+    onProgress: (p: Progress, immediate: boolean) => void;
     onInitialized: () => void;
     onSelection: (s: { page: number; rects: Rect[]; text: string } | null) => void;
     onSelect: (a: Annotation) => void;
@@ -85,6 +92,7 @@
     return () => next.free();
   });
   export async function goTo(n: number, offset = 0) {
+    document.dispatchEvent(new Event('ink-finish'));
     const request = ++navigation;
     const target = Math.max(1, Math.min(pdf.numPages, Math.round(n)));
     current = target;
@@ -98,9 +106,10 @@
       offset * (tops[target] - tops[target - 1] - 20);
     scrollTop = scroller.scrollTop;
     adjusting = false;
-    report();
+    report(true);
   }
   export async function configure(change: Partial<Progress>) {
+    document.dispatchEvent(new Event('ink-finish'));
     const saved = capture();
     settings = { ...settings, ...change };
     await tick();
@@ -117,11 +126,11 @@
       zoom: settings.fit === 'custom' ? settings.zoom : Math.max(0.25, Math.min(4, scale)),
     };
   }
-  function report() {
+  function report(immediate = false) {
     if (initialized) {
       const p = capture();
       current = p.page;
-      onProgress(p);
+      onProgress(p, immediate);
     }
   }
   function scroll() {
@@ -167,6 +176,7 @@
     else registry.delete(n);
   }
   function selection() {
+    if (inkSettings.tool !== 'text') return;
     clearTimeout(selectionTimer);
     selectionTimer = setTimeout(() => {
       const sel = window.getSelection();
@@ -261,6 +271,8 @@
 <div
   class="viewer"
   class:focus
+  class:ink-touch-pan={writingTool(inkSettings.tool)}
+  use:inkTouchPan={{ settings: () => inkSettings, session: inkSession }}
   bind:this={scroller}
   onscroll={scroll}
   tabindex="0"
@@ -289,6 +301,8 @@
           {queue}
           priority={Math.abs(n - current)}
           {regionMode}
+          {inkSession}
+          {inkSettings}
           onSize={size}
           onReady={ready}
           {onError}

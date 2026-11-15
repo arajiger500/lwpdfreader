@@ -1,11 +1,18 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { Annotation, DocumentMeta, Progress } from './types';
 import { validateAnnotations } from './core';
+import type { Stroke, InkDeleted } from './ink-types';
 
 interface Schema extends DBSchema {
   documents: { key: string; value: DocumentMeta };
   files: { key: string; value: Blob };
   annotations: { key: string; value: Annotation; indexes: { 'by-document': string } };
+  ink: {
+    key: string;
+    value: Stroke;
+    indexes: { 'by-document': string; 'by-page': [string, number] };
+  };
+  inkDeleted: { key: string; value: InkDeleted; indexes: { 'by-document': string } };
   settings: { key: string; value: unknown };
 }
 
@@ -16,11 +23,17 @@ export function migrateDatabase(db: IDBPDatabase<Schema>, oldVersion: number) {
     db.createObjectStore('annotations', { keyPath: 'id' }).createIndex('by-document', 'documentId');
     db.createObjectStore('settings');
   }
+  if (oldVersion < 2) {
+    const ink = db.createObjectStore('ink', { keyPath: 'id' });
+    ink.createIndex('by-document', 'documentId');
+    ink.createIndex('by-page', ['documentId', 'page']);
+    db.createObjectStore('inkDeleted', { keyPath: 'id' }).createIndex('by-document', 'documentId');
+  }
 }
 
 // Synchronous request errors do not necessarily abort an IDB transaction.
 // Explicitly abort and consume tx.done for every failed multi-step mutation.
-async function abort(
+export async function abort(
   tx: { abort(): void; done: Promise<unknown> },
   error: unknown,
 ): Promise<never> {
@@ -35,7 +48,7 @@ async function abort(
 
 let connection: Promise<IDBPDatabase<Schema>> | undefined;
 export function database() {
-  return (connection ??= openDB<Schema>('lwpdfreader', 1, {
+  return (connection ??= openDB<Schema>('lwpdfreader', 2, {
     upgrade: migrateDatabase,
     blocking() {
       void connection?.then((db) => db.close());
@@ -115,12 +128,19 @@ export async function saveProgress(id: string, progress: Progress) {
 
 export async function removeDocument(id: string) {
   const db = await database();
-  const tx = db.transaction(['documents', 'files', 'annotations', 'settings'], 'readwrite');
+  const tx = db.transaction(
+    ['documents', 'files', 'annotations', 'settings', 'ink', 'inkDeleted'],
+    'readwrite',
+  );
   try {
     await tx.objectStore('documents').delete(id);
     await tx.objectStore('files').delete(id);
     for (const key of await tx.objectStore('annotations').index('by-document').getAllKeys(id))
       await tx.objectStore('annotations').delete(key);
+    for (const store of ['ink', 'inkDeleted'] as const) {
+      for (const key of await tx.objectStore(store).index('by-document').getAllKeys(id))
+        await tx.objectStore(store).delete(key);
+    }
     if ((await tx.objectStore('settings').get('lastDocument')) === id)
       await tx.objectStore('settings').delete('lastDocument');
     await tx.done;

@@ -34,7 +34,8 @@ beforeAll(async () => {
 });
 beforeEach(async () => {
   const db = await database();
-  for (const s of ['documents', 'files', 'annotations', 'settings'] as const) await db.clear(s);
+  for (const s of ['documents', 'files', 'annotations', 'settings', 'ink', 'inkDeleted'] as const)
+    await db.clear(s);
 });
 describe('transactional local library', () => {
   it('imports binary separately and deduplicates without losing progress', async () => {
@@ -89,8 +90,15 @@ describe('transactional local library', () => {
   });
   it('migration is idempotent for existing schema versions', async () => {
     const db = await database();
-    migrateDatabase(db, 1);
-    expect([...db.objectStoreNames]).toEqual(['annotations', 'documents', 'files', 'settings']);
+    migrateDatabase(db, 2);
+    expect([...db.objectStoreNames]).toEqual([
+      'annotations',
+      'documents',
+      'files',
+      'ink',
+      'inkDeleted',
+      'settings',
+    ]);
   });
   it('never moves an existing annotation to another document', async () => {
     await importDocument(meta(), new Blob());
@@ -124,7 +132,7 @@ describe('portable backups', () => {
     await importDocument(meta(), new Blob());
     const b = await exportBackup();
     for (const bad of [
-      { ...b, version: 2 },
+      { ...b, version: 3 },
       { ...b, documents: [{ ...meta(), progress: { ...defaultProgress(), page: 0 } }] },
       { ...b, annotations: [newAnnotation(id2, 1, 'note')] },
     ])

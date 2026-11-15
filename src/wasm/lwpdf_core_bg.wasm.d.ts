@@ -1,6 +1,10 @@
 /* tslint:disable */
 /* eslint-disable */
 export const memory: WebAssembly.Memory;
+export const __wbg_inkeraser_free: (a: number, b: number) => void;
+export const canonical_strokes: (a: number, b: number) => [number, number, number, number];
+export const inkeraser_erase: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
+export const inkeraser_new: (a: number, b: number) => [number, number, number];
 export const __wbg_annotationindex_free: (a: number, b: number) => void;
 export const annotationindex_hit_test: (a: number, b: number, c: number, d: number) => [number, number];
 export const annotationindex_intersect: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];

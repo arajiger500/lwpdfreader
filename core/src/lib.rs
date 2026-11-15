@@ -1,3 +1,5 @@
+mod ink;
+pub use ink::{canonical_strokes, InkEraser};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use wasm_bindgen::prelude::*;

@@ -30,6 +30,12 @@ Offline caching runs in production builds, not the development server. Use HTTPS
 - **Backups do not include PDF files.** Keep the original PDFs separately. Restored documents without files appear in the library; import the same original PDF to reconnect them.
 - Add to Home Screen in Safari’s Share menu to install. After the shell has cached and PDFs have imported, reading and annotations work offline.
 
+## Pen, marker and eraser
+
+The docked annotation toolbar now includes Hand, Text highlight, Pen, Freehand highlighter, Eraser, width/color options and Undo/Redo. Pencil-style pointer input supports pressure and coalesced events when available. Fingers pan by default; finger drawing is optional. Use Hand for native pinch zoom. Marker opacity is applied once per original stroke; precision erasing splits persistent vectors, while whole-stroke erasing removes the original stroke's remaining fragments. Collapse or Focus switches to reading mode.
+
+Saved ink, including undo/redo results, survives reloads and is included in v2 JSON backups. Existing v1 backups still import and existing study data migrates in place. Undo history lasts for the open session. Failed writes retain unsaved vectors with a Retry ink action. Browser palm rejection and Apple Pencil double-tap/native API parity are not guaranteed. See [tool behavior, architecture and real-iPad checklist](docs/PENCIL.md).
+
 ## Data and privacy
 
 All PDFs and study data stay in this origin’s IndexedDB. There are no accounts, backend, analytics, remote fonts or document uploads. File hashing and PDF parsing run in workers. The original PDF is immutable. The application only requests its same-origin application resources.
@@ -69,7 +75,7 @@ npm test
 npm run build
 ```
 
-Commit changes in `src/wasm` with their Rust source. `wasm-bindgen` is pinned in `core/Cargo.toml`; Cargo dependencies are locked. `wasm-opt` is disabled to avoid an implicit platform-specific binary download; LLVM size optimization and LTO remain enabled. CI rebuilds the artifacts and checks for drift. Build from the repository root.
+Commit changes in `src/wasm` with their Rust source. `wasm-bindgen` is pinned in `core/Cargo.toml`; Cargo dependencies are locked. `wasm-opt` is disabled to avoid an implicit platform-specific binary download; LLVM size optimization and LTO remain enabled. The build normalizes source paths and removes optional producer metadata (which differs between downloaded and cargo-built bindgen tools). CI rebuilds the artifacts and checks for drift. Build from the repository root.
 
 ## Deploy to Vercel
 
@@ -77,7 +83,7 @@ Import this GitHub repository, choose Vite, set Node 24, install with `npm ci`, 
 
 ## First-release limits
 
-Real iPad hardware, Safari touch selection handles, Pencil gestures, app termination and iPadOS storage eviction require the [manual acceptance procedure](docs/TESTING.md). Linux Chromium results are not iPad performance claims. Browser-native pinch magnifies the whole view; toolbar zoom refits the document. No handwriting, OCR, full-document search, password-protected PDFs, editable PDF forms, or PDF export with embedded annotations. Existing PDF annotations render as part of PDF.js output but are not editable here. JSON backup merging is additive: importing an older backup can restore previously deleted annotations. Text selection is restricted to one page with explicit feedback.
+Real iPad hardware, Safari touch selection handles, Pencil gestures, app termination and iPadOS storage eviction require the [manual acceptance procedure](docs/TESTING.md). Linux Chromium results are not iPad performance claims. Browser-native pinch magnifies the whole view; toolbar zoom refits the document. No OCR, full-document search, password-protected PDFs, editable PDF forms, or PDF export with embedded annotations. Existing PDF annotations render as part of PDF.js output but are not editable here. Text-annotation backup merging is additive and can restore deleted text records. Ink backups include deletion records to keep erased strokes erased. Text selection is restricted to one page with explicit feedback.
 
 Large real textbooks can be much more expensive than the synthetic benchmark. Canvas allocation is bounded; PDF.js still retains document parsing data and visited range bytes. Extreme diagrams, unusual embedded fonts and damaged files can remain costly. See performance notes before making hardware claims.
 
@@ -86,5 +92,7 @@ Large real textbooks can be much more expensive than the synthetic benchmark. Ca
 MIT for application and Rust source. PDF.js is Apache-2.0; its extracted text-layer stylesheet and runtime resources retain upstream notices. See [third-party notices](THIRD_PARTY_NOTICES.md).
 
 ## Preview
+
+![Vector pen and marker tools](docs/screenshots/ink-tools.png)
 
 ![Reader with persistent highlight and note](docs/screenshots/reader.png)

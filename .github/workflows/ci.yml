@@ -32,4 +32,14 @@ jobs:
       - run: cargo test --manifest-path core/Cargo.toml --locked
       - run: cargo install wasm-pack --locked --version 0.13.1
       - run: npm run wasm:build
+      - run: |
+          rustc -vV
+          cargo -vV
+          sha256sum src/wasm/lwpdf_core_bg.wasm
       - run: git diff --exit-code -- src/wasm
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: rust-wasm-${{ github.run_id }}
+          path: src/wasm/
+          retention-days: 3

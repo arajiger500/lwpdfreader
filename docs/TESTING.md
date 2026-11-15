@@ -27,7 +27,7 @@ Automated testing is against Linux Chromium, real generated PDFs, production ass
 
 ## Expected limits
 
-No OCR, ink, password entry, full-document search, cross-page text highlight, embedded-annotation PDF export, fuzzy reanchoring or collaborative/multiple-tab editing. Native pinch zoom magnifies the application viewport; toolbar zoom is the layout zoom. Forms, external links and the original PDF’s annotations do not have a separate interactive annotation layer. Safari storage retention and force-kill behavior cannot be guaranteed.
+No OCR, password entry, full-document search, cross-page text highlight, embedded-annotation PDF export, fuzzy reanchoring or collaborative/multiple-tab editing. Native pinch zoom magnifies the application viewport; toolbar zoom is the layout zoom. Forms, external links and the original PDF’s annotations do not have a separate interactive annotation layer. Safari storage retention and force-kill behavior cannot be guaranteed.
 
 ## Extended performance fixtures
 
@@ -39,6 +39,23 @@ npm run benchmark:core
 
 The heavy fixture has 1,500 pages and 64 unique, deterministic 2048×2048 noise JPEGs reused across pages (~163 MiB). It is intentionally not committed. The browser benchmark samples 40 jumps, initial import, local reopen, zoom, live canvases, main JS heap and Linux aggregate Chromium process RSS (including shared mappings and browser overhead). Preserve `test-results/performance-heavy.json` before a new full test run clears that folder. Linux WebKit installation was attempted, but the Cloud environment lacks its required system libraries and the package helper; no WebKit/Safari pass is claimed.
 
-## Recorded verification
+## Original reader verification (before vector ink)
 
 The final application passed 14 Rust unit tests, 33 TypeScript tests and nine Chromium browser scenarios, plus the same 40-jump benchmark on the separately generated 163 MiB fixture. The production build and strict checks passed. A separate clean worktree ran `npm ci`, unit tests and the production build successfully; Rust is not invoked by that frontend path. Rebuilding the committed WASM with the pinned toolchain produced no artifact diff. `npm audit --omit=dev` reported zero vulnerabilities. The remaining acceptance work is actual iPad/Safari/Pencil/storage-eviction testing, not an automated pass on those platforms.
+
+## Vector ink verification
+
+Run `npm test`, `cargo test --manifest-path core/Cargo.toml --locked`, `npm run build` and `npm run test:browser`. Ink tests cover migration, serialization, normalized geometry, transactional rollback, persistence, history limits, page-cache eviction, precision splitting, stroke/target filters, deletion-aware backups, pressure events, cancellation, marker compositing, no PDF rerender while drawing, tool preferences, finger navigation, dense handwriting, and long gesture chunking. A crop/90° rotation/UserUnit=2 fixture tests coordinate transforms. Physical-device checks are in [PENCIL.md](PENCIL.md).
+
+The vector-ink extension passed **26 Rust tests, 50 TypeScript tests and 18 Chromium browser scenarios**. A final focused pass repeated pressure/cancellation and finger-navigation checks after adding lost-capture cleanup. The production build and strict TypeScript/Svelte diagnostics pass. WASM rebuilding produced no diff. These results do not establish physical iPad/Safari/Pencil behavior.
+
+The complete ink workflow was also rerun successfully against the generated 163 MiB illustrated PDF, including precision erasing, undo/redo, backups and offline reload:
+
+```sh
+npm run fixtures:heavy
+LWPDF_INK_FIXTURE=heavy.pdf npm run test:browser -- --grep 'pen, translucent' --output=test-results-heavy
+```
+
+Cross-host CI verification also checks WASM artifact drift. The WASM build normalizes checkout/Cargo source paths and disables incremental compilation so host-specific panic locations do not change the committed binary. The build removes only the optional `producers` custom section: the prebuilt bindgen CLI includes a commit hash absent from the cargo-installed CLI. Downloaded CI and local artifacts were verified byte-identical after normalization. Rotation geometry tests read both rectangles atomically to avoid sampling different layout frames during sidebar resizing.
+
+The normalized WASM build was also verified from a different checkout path and a different Cargo home on Linux. After producer-metadata normalization, the binary SHA-256 is `6757ce1a526bef39c95dc742429acdea4219f80a4de31d126c46958462726c00`; the emitted binary contained canonical `/cargo` paths rather than a builder's home directory.

@@ -375,6 +375,7 @@ test('an unsaved note cannot be discarded by closing the sidebar or leaving the 
 }) => {
   await importPdf(page);
   await page.getByLabel('Add page note', { exact: true }).click();
+  await expect(page.getByLabel('Your note', { exact: true })).toBeVisible();
   await page.evaluate(() => {
     const original = IDBObjectStore.prototype.put;
     (window as unknown as { restoreWrites: () => void }).restoreWrites = () =>
@@ -386,11 +387,15 @@ test('an unsaved note cannot be discarded by closing the sidebar or leaving the 
   });
   await page.getByLabel('Your note', { exact: true }).fill('Keep this unsaved thought safe.');
   await expect(page.getByLabel('Retry saving note')).toHaveText('Not saved — retry');
+  await page.getByLabel('Dismiss error').click();
   await page.getByLabel('Close sidebar', { exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Storage is full');
   await expect(page.getByLabel('Your note', { exact: true })).toHaveValue(
     'Keep this unsaved thought safe.',
   );
+  await page.getByLabel('Dismiss error').click();
   await page.getByLabel('Back to library').click();
+  await expect(page.getByRole('alert')).toContainText('Storage is full');
   await expect(page.getByLabel('Your note', { exact: true })).toHaveValue(
     'Keep this unsaved thought safe.',
   );
