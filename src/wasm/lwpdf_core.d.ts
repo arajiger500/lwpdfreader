@@ -1,5 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
+export function canonical_strokes(input: string): string;
 export function canonical_annotations(input: string): string;
 export function normalize_rect(x: number, y: number, w: number, h: number, width: number, height: number): string;
 /**
@@ -13,11 +14,26 @@ export class AnnotationIndex {
   hit_test(page: number, x: number, y: number): string;
   intersect(page: number, x: number, y: number, w: number, h: number): string;
 }
+/**
+ * An eraser gesture owns an immutable page snapshot, a spatial index, and its
+ * progressively cut fragments. Only candidates under new pointer batches run
+ * geometry; no per-point WASM calls or full-document traversal is needed.
+ */
+export class InkEraser {
+  free(): void;
+  [Symbol.dispose](): void;
+  constructor(input: string);
+  erase(path: string, radius: number, mode: string, target: string): string;
+}
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
+  readonly __wbg_inkeraser_free: (a: number, b: number) => void;
+  readonly canonical_strokes: (a: number, b: number) => [number, number, number, number];
+  readonly inkeraser_erase: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
+  readonly inkeraser_new: (a: number, b: number) => [number, number, number];
   readonly __wbg_annotationindex_free: (a: number, b: number) => void;
   readonly annotationindex_hit_test: (a: number, b: number, c: number, d: number) => [number, number];
   readonly annotationindex_intersect: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
