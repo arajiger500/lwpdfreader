@@ -55,3 +55,7 @@ The complete ink workflow was also rerun successfully against the generated 163 
 npm run fixtures:heavy
 LWPDF_INK_FIXTURE=heavy.pdf npm run test:browser -- --grep 'pen, translucent' --output=test-results-heavy
 ```
+
+Cross-host CI verification also checks WASM artifact drift. The WASM build normalizes checkout/Cargo source paths and disables incremental compilation so host-specific panic locations do not change the committed binary. Rotation geometry tests read both rectangles atomically to avoid sampling different layout frames during sidebar resizing.
+
+The normalized WASM build was also verified from a different checkout path and a different Cargo home on Linux. Both produced SHA-256 `42b07bd5ac812e275a49bb27467cde9edce68ad2cd5f73b26855251dcfd1cdf7`; the emitted binary contained canonical `/cargo` paths rather than a builder's home directory.

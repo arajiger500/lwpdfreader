@@ -449,14 +449,18 @@ test('crop origins and intrinsic rotation keep ink aligned through further view 
   expect(s.points[0].x).toBeCloseTo(0.4, 2);
   expect(s.points[0].y).toBeCloseTo(0.25, 2);
   await page.getByLabel('Close sidebar', { exact: true }).click();
-  const center = async () => {
-    const p = (await page.locator('.pdf-page').boundingBox())!,
-      b = (await page.locator('.ink-layer [data-stroke]').boundingBox())!;
-    return { x: (b.x + b.width / 2 - p.x) / p.width, y: (b.y + b.height / 2 - p.y) / p.height };
-  };
+  // Read both bounds in one browser task: sidebar resizing can otherwise happen
+  // between two protocol round-trips and mix different viewport scales.
+  const center = () =>
+    page.evaluate(() => {
+      const p = document.querySelector('.pdf-page')!.getBoundingClientRect();
+      const b = document.querySelector('.ink-layer [data-stroke]')!.getBoundingClientRect();
+      return { x: (b.x + b.width / 2 - p.x) / p.width, y: (b.y + b.height / 2 - p.y) / p.height };
+    });
   const before = await center();
   await page.getByLabel('Rotate clockwise').click();
   await expect(page.locator('.pdf-page')).toHaveAttribute('data-rendered', 'true');
+  await expect(page.locator('.textLayer')).toHaveAttribute('data-main-rotation', '180');
   const after = await center();
   expect(after.x).toBeCloseTo(1 - before.y, 2);
   expect(after.y).toBeCloseTo(before.x, 2);
