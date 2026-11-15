@@ -375,6 +375,7 @@ test('an unsaved note cannot be discarded by closing the sidebar or leaving the 
 }) => {
   await importPdf(page);
   await page.getByLabel('Add page note', { exact: true }).click();
+  await expect(page.getByLabel('Your note', { exact: true })).toBeVisible();
   await page.evaluate(() => {
     const original = IDBObjectStore.prototype.put;
     (window as unknown as { restoreWrites: () => void }).restoreWrites = () =>

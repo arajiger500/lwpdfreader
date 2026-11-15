@@ -75,7 +75,7 @@ npm test
 npm run build
 ```
 
-Commit changes in `src/wasm` with their Rust source. `wasm-bindgen` is pinned in `core/Cargo.toml`; Cargo dependencies are locked. `wasm-opt` is disabled to avoid an implicit platform-specific binary download; LLVM size optimization and LTO remain enabled. CI rebuilds the artifacts and checks for drift. Build from the repository root.
+Commit changes in `src/wasm` with their Rust source. `wasm-bindgen` is pinned in `core/Cargo.toml`; Cargo dependencies are locked. `wasm-opt` is disabled to avoid an implicit platform-specific binary download; LLVM size optimization and LTO remain enabled. The build normalizes source paths and removes optional producer metadata (which differs between downloaded and cargo-built bindgen tools). CI rebuilds the artifacts and checks for drift. Build from the repository root.
 
 ## Deploy to Vercel
 
