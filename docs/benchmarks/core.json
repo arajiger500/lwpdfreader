@@ -1,0 +1,10 @@
+{
+  "date": "2026-11-15T08:58:05.877Z",
+  "environment": "Node v24.22.1 on Linux, real committed WASM",
+  "annotations": 10000,
+  "rectangles": 20000,
+  "jsonBytes": 3351142,
+  "validationAndCanonicalSerializationMs": 65.11393645,
+  "indexBuildMs": 28.298408999999992,
+  "pageLookupMicros": 17.893107899999997
+}
