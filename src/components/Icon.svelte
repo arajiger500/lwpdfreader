@@ -1,6 +1,14 @@
 <script lang="ts">
   let { name, size = 20 }: { name: string; size?: number } = $props();
   const paths: Record<string, string> = {
+    hand: 'M8 11V5a2 2 0 0 1 4 0v5 M12 8V4a2 2 0 0 1 4 0v7 M16 8a2 2 0 0 1 4 0v7c0 4-3 6-7 6-3 0-4-2-6-4l-4-4a2 2 0 0 1 3-3l2 2z',
+    pen: 'm4 16 12-12 4 4-12 12-5 1z M14 6l4 4 M5 15l4 4',
+    marker: 'm6 14 9-11 6 5-9 11-6 1z M11 8l6 5 M4 22h14',
+    eraser: 'm4 14 10-11 7 7-10 11H9z M8 10l7 7 M12 21h9',
+    undo: 'M8 5 3 10l5 5 M3 10h10a6 6 0 0 1 0 12',
+    redo: 'm16 5 5 5-5 5 M21 10H11a6 6 0 0 0 0 12',
+    settings: 'M4 7h16 M4 17h16 M8 4v6 M16 14v6',
+    collapse: 'm7 9 5 5 5-5',
     book: 'M4 4h6a3 3 0 0 1 3 3v14a4 4 0 0 0-4-2H4z M20 4h-4a3 3 0 0 0-3 3v14a4 4 0 0 1 4-2h3z',
     plus: 'M12 5v14 M5 12h14',
     back: 'm14 6-6 6 6 6',

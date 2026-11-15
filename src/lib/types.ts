@@ -1,3 +1,4 @@
+import type { Stroke, InkDeleted } from './ink-types';
 export type Color = 'yellow' | 'green' | 'blue' | 'pink';
 export interface Rect {
   x: number;
@@ -38,7 +39,9 @@ export interface DocumentMeta {
 }
 export interface Backup {
   format: 'LWPDFReader';
-  version: 1;
+  version: 2;
+  strokes: Stroke[];
+  inkDeleted: InkDeleted[];
   exportedAt: number;
   documents: DocumentMeta[];
   annotations: Annotation[];

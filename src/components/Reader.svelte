@@ -9,6 +9,10 @@
   import Viewer from './Viewer.svelte';
   import Sidebar from './Sidebar.svelte';
   import Icon from './Icon.svelte';
+  import InkToolbar from './InkToolbar.svelte';
+  import { InkSession } from '../lib/ink-session';
+  import { defaultInkSettings, validInkSettings, type InkSettings } from '../lib/ink-types';
+  import { getSetting, setSetting } from '../lib/storage';
   let {
     doc,
     pdf,
@@ -24,6 +28,21 @@
     theme: string;
     onTheme: () => void;
   } = $props();
+  const inkSession = untrack(() => new InkSession(doc.id, onError));
+  const inkStatus = inkSession.status;
+  let inkSettings = $state<InkSettings>(defaultInkSettings());
+  let settingsTimer: ReturnType<typeof setTimeout>;
+  let settingsTouched = false;
+  function changeInk(settings: InkSettings) {
+    document.dispatchEvent(new Event('ink-finish'));
+    settingsTouched = true;
+    region = false;
+    selection = null;
+    window.getSelection()?.removeAllRanges();
+    inkSettings = settings;
+    clearTimeout(settingsTimer);
+    settingsTimer = setTimeout(() => void setSetting('ink-settings', settings).catch(onError), 200);
+  }
   let viewer: Viewer;
   let sidebarView = $state.raw<Sidebar | undefined>(undefined);
   let viewerReady = $state(false);
@@ -46,7 +65,12 @@
   const writer = new ProgressWriter(
     async (p) => {
       await saveProgress(doc.id, p);
-      saveState = 'Saved on this device';
+      if (
+        ['page', 'offset', 'zoom', 'fit', 'mode', 'rotation'].every(
+          (key) => p[key as keyof Progress] === progress[key as keyof Progress],
+        )
+      )
+        saveState = 'Saved on this device';
     },
     (e) => {
       saveState = 'Position not saved';
@@ -56,11 +80,12 @@
   const bookmarked = $derived(
     annotations.some((a) => a.kind === 'bookmark' && a.page === progress.page),
   );
-  function report(p: Progress) {
+  function report(p: Progress, immediate = false) {
     progress = p;
     if (!pageEditing) pageInput = String(p.page);
     saveState = 'Saving position…';
     writer.schedule(p);
+    if (immediate) void writer.flush();
   }
   function tell(s: string) {
     message = s;
@@ -137,6 +162,11 @@
   }
   async function backup() {
     try {
+      document.dispatchEvent(new Event('ink-finish'));
+      if (!(await inkSession.flush())) {
+        onError(new Error('Ink is not saved. Use Retry ink before leaving or exporting.'));
+        return;
+      }
       if (sidebarView && !(await sidebarView.flushEditor())) return;
       await writer.flush();
       downloadBackup(await exportBackup(doc.id), doc.name.replace(/\.pdf$/i, ''));
@@ -146,6 +176,11 @@
   }
   async function back() {
     try {
+      document.dispatchEvent(new Event('ink-finish'));
+      if (!(await inkSession.flush())) {
+        onError(new Error('Ink is not saved. Use Retry ink before leaving or exporting.'));
+        return;
+      }
       if (sidebarView && !(await sidebarView.flushEditor())) return;
       await writer.flush();
       await onBack();
@@ -171,11 +206,35 @@
   function zoom(delta: number) {
     setting({ fit: 'custom', zoom: Math.max(0.25, Math.min(4, progress.zoom + delta)) });
   }
+  async function undoInk() {
+    document.dispatchEvent(new Event('ink-finish'));
+    if (await inkSession.flush()) await inkSession.undo();
+  }
+  async function redoInk() {
+    document.dispatchEvent(new Event('ink-finish'));
+    if (await inkSession.flush()) await inkSession.redo();
+  }
   function visibility(e: Event) {
     if (e.type === 'pagehide' || document.visibilityState === 'hidden') void writer.flush();
   }
   onMount(() => {
     let active = true;
+    void getSetting<unknown>('ink-settings')
+      .then((s) => {
+        if (active && !settingsTouched) inkSettings = validInkSettings(s);
+      })
+      .catch(onError);
+    const historyKey = (e: KeyboardEvent) => {
+      if (
+        (e.metaKey || e.ctrlKey) &&
+        e.key.toLowerCase() === 'z' &&
+        !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)
+      ) {
+        e.preventDefault();
+        void (e.shiftKey ? redoInk() : undoInk());
+      }
+    };
+    window.addEventListener('keydown', historyKey);
     void getAnnotations(doc.id)
       .then((a) => {
         if (active) annotations = a;
@@ -196,6 +255,10 @@
     window.addEventListener('pagehide', visibility);
     return () => {
       active = false;
+      window.removeEventListener('keydown', historyKey);
+      clearTimeout(settingsTimer);
+      if (settingsTouched) void setSetting('ink-settings', { ...inkSettings }).catch(onError);
+      void inkSession.flush();
       clearTimeout(outlineTimer);
       clearTimeout(messageTimer);
       void writer.flush();
@@ -295,7 +358,9 @@
         class="tool-button"
         class:active={region}
         onclick={() => {
-          region = !region;
+          const next = !region;
+          changeInk({ ...inkSettings, tool: 'text' });
+          region = next;
           if (region)
             tell('Drag across a page to highlight a region. Turn this tool off to scroll.');
         }}
@@ -308,8 +373,13 @@
         ><Icon name="rotate" size={18} /></button
       ><button class="icon-button optional-tool" aria-label="Toggle theme" onclick={onTheme}
         ><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} /></button
-      ><button class="icon-button" aria-label="Focus reading" onclick={() => (focus = true)}
-        ><Icon name="focus" size={18} /></button
+      ><button
+        class="icon-button"
+        aria-label="Focus reading"
+        onclick={() => {
+          changeInk({ ...inkSettings, tool: 'hand' });
+          focus = true;
+        }}><Icon name="focus" size={18} /></button
       >
     </div>
   </div>
@@ -317,6 +387,8 @@
     <Viewer
       bind:this={viewer}
       {pdf}
+      {inkSession}
+      {inkSettings}
       initial={doc.progress}
       {annotations}
       regionMode={region}
@@ -347,6 +419,16 @@
         onExport={backup}
       />{/if}
   </main>
+  {#if !focus}
+    <InkToolbar
+      settings={inkSettings}
+      status={$inkStatus}
+      onChange={changeInk}
+      onUndo={() => void undoInk()}
+      onRedo={() => void redoInk()}
+      onRetry={() => void inkSession.retry()}
+    />
+  {/if}
   {#if focus}<button class="exit-focus" onclick={() => (focus = false)}
       ><Icon name="focus" size={18} /> Show controls · {progress.page} / {pdf.numPages}</button
     >{/if}

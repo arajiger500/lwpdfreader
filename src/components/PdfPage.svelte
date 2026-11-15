@@ -1,4 +1,7 @@
 <script lang="ts">
+  import InkLayer from './InkLayer.svelte';
+  import type { InkSession } from '../lib/ink-session';
+  import { writingTool, type InkSettings } from '../lib/ink-types';
   import { onDestroy, untrack } from 'svelte';
   import { pdfEngine, type PDFDocumentProxy, type PDFPageProxy, type RenderTask } from '../lib/pdf';
   import type { PageViewport, TextLayer } from 'pdfjs-dist';
@@ -17,6 +20,8 @@
     queue,
     priority,
     regionMode,
+    inkSession,
+    inkSettings,
     onSize,
     onReady,
     onError,
@@ -34,6 +39,8 @@
     queue: RenderQueue;
     priority: number;
     regionMode: boolean;
+    inkSession: InkSession;
+    inkSettings: InkSettings;
     onSize: (n: number, w: number, h: number) => void;
     onReady: (n: number, el: HTMLElement | null, viewport?: PageViewport, box?: number[]) => void;
     onError: (e: unknown) => void;
@@ -142,7 +149,13 @@
     pageProxy?.cleanup();
   });
   function click(e: MouseEvent) {
-    if (regionMode || !viewport || !window.getSelection()?.isCollapsed) return;
+    if (
+      writingTool(inkSettings.tool) ||
+      regionMode ||
+      !viewport ||
+      !window.getSelection()?.isCollapsed
+    )
+      return;
     const b = host.getBoundingClientRect();
     const [x, y] = viewport.convertToPdfPoint(e.clientX - b.left, e.clientY - b.top);
     const nx = (x - box[0]) / (box[2] - box[0]),
@@ -195,6 +208,8 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions a11y_click_events_have_key_events -->
 <div
   class:region-mode={regionMode}
+  class:inking={writingTool(inkSettings.tool)}
+  class:hand-mode={inkSettings.tool === 'hand'}
   class="pdf-page"
   data-page={page}
   data-rendered={rendered}
@@ -230,6 +245,14 @@
           ></div>{/each}{/each}{/if}
   </div>
   <div class="textLayer" bind:this={text}></div>
+  {#if viewport}<InkLayer
+      session={inkSession}
+      {page}
+      {viewport}
+      {box}
+      settings={inkSettings}
+      {onError}
+    />{/if}
   {#if noText}<div class="no-text">Image-only page · Use Region highlight to mark an area</div>{/if}
   {#if drag}<div
       class="region-draft"
