@@ -1,0 +1,293 @@
+{
+  "date": "2026-11-15T21:33:55.975Z",
+  "browser": "Chromium on Linux; original synthetic PDF, not real iPad hardware",
+  "pages": 1500,
+  "fixture": "large.pdf",
+  "fixtureBytes": 1104935,
+  "firstPageMs": 3240,
+  "reopenMs": 1005,
+  "zoomMs": 154,
+  "closedBrowserRssBytes": 721801216,
+  "samples": [
+    {
+      "page": 1000,
+      "navigationMs": 184,
+      "canvases": 3,
+      "browserRssBytes": 773459968,
+      "heap": 7275614
+    },
+    {
+      "page": 25,
+      "navigationMs": 243,
+      "canvases": 3,
+      "browserRssBytes": 784228352,
+      "heap": 8459649
+    },
+    {
+      "page": 1490,
+      "navigationMs": 170,
+      "canvases": 3,
+      "browserRssBytes": 780451840,
+      "heap": 8167243
+    },
+    {
+      "page": 700,
+      "navigationMs": 195,
+      "canvases": 3,
+      "browserRssBytes": 770035712,
+      "heap": 10648298
+    },
+    {
+      "page": 1,
+      "navigationMs": 215,
+      "canvases": 2,
+      "browserRssBytes": 753569792,
+      "heap": 10216345
+    },
+    {
+      "page": 1200,
+      "navigationMs": 161,
+      "canvases": 3,
+      "browserRssBytes": 774524928,
+      "heap": 8927224
+    },
+    {
+      "page": 40,
+      "navigationMs": 229,
+      "canvases": 3,
+      "browserRssBytes": 793513984,
+      "heap": 8892094
+    },
+    {
+      "page": 1450,
+      "navigationMs": 286,
+      "canvases": 3,
+      "browserRssBytes": 782884864,
+      "heap": 11343286
+    },
+    {
+      "page": 92,
+      "navigationMs": 247,
+      "canvases": 3,
+      "browserRssBytes": 805302272,
+      "heap": 10715516
+    },
+    {
+      "page": 265,
+      "navigationMs": 350,
+      "canvases": 3,
+      "browserRssBytes": 808173568,
+      "heap": 10605728
+    },
+    {
+      "page": 438,
+      "navigationMs": 182,
+      "canvases": 3,
+      "browserRssBytes": 801153024,
+      "heap": 10191846
+    },
+    {
+      "page": 611,
+      "navigationMs": 139,
+      "canvases": 3,
+      "browserRssBytes": 793788416,
+      "heap": 12356682
+    },
+    {
+      "page": 784,
+      "navigationMs": 151,
+      "canvases": 3,
+      "browserRssBytes": 797741056,
+      "heap": 11721984
+    },
+    {
+      "page": 957,
+      "navigationMs": 202,
+      "canvases": 3,
+      "browserRssBytes": 801275904,
+      "heap": 8705281
+    },
+    {
+      "page": 1130,
+      "navigationMs": 168,
+      "canvases": 3,
+      "browserRssBytes": 809750528,
+      "heap": 6740916
+    },
+    {
+      "page": 1303,
+      "navigationMs": 169,
+      "canvases": 3,
+      "browserRssBytes": 815890432,
+      "heap": 9322365
+    },
+    {
+      "page": 1476,
+      "navigationMs": 183,
+      "canvases": 3,
+      "browserRssBytes": 800755712,
+      "heap": 11749912
+    },
+    {
+      "page": 150,
+      "navigationMs": 106,
+      "canvases": 3,
+      "browserRssBytes": 797503488,
+      "heap": 6604569
+    },
+    {
+      "page": 323,
+      "navigationMs": 210,
+      "canvases": 3,
+      "browserRssBytes": 798240768,
+      "heap": 9323620
+    },
+    {
+      "page": 496,
+      "navigationMs": 189,
+      "canvases": 3,
+      "browserRssBytes": 811683840,
+      "heap": 12094090
+    },
+    {
+      "page": 669,
+      "navigationMs": 144,
+      "canvases": 3,
+      "browserRssBytes": 818237440,
+      "heap": 6397750
+    },
+    {
+      "page": 842,
+      "navigationMs": 153,
+      "canvases": 3,
+      "browserRssBytes": 803340288,
+      "heap": 8915851
+    },
+    {
+      "page": 1015,
+      "navigationMs": 156,
+      "canvases": 3,
+      "browserRssBytes": 799133696,
+      "heap": 11400043
+    },
+    {
+      "page": 1188,
+      "navigationMs": 197,
+      "canvases": 3,
+      "browserRssBytes": 809914368,
+      "heap": 6918082
+    },
+    {
+      "page": 1361,
+      "navigationMs": 135,
+      "canvases": 3,
+      "browserRssBytes": 801083392,
+      "heap": 9475178
+    },
+    {
+      "page": 35,
+      "navigationMs": 113,
+      "canvases": 3,
+      "browserRssBytes": 799682560,
+      "heap": 11830406
+    },
+    {
+      "page": 208,
+      "navigationMs": 151,
+      "canvases": 3,
+      "browserRssBytes": 797343744,
+      "heap": 6841006
+    },
+    {
+      "page": 381,
+      "navigationMs": 120,
+      "canvases": 3,
+      "browserRssBytes": 785068032,
+      "heap": 8902107
+    },
+    {
+      "page": 554,
+      "navigationMs": 142,
+      "canvases": 3,
+      "browserRssBytes": 800485376,
+      "heap": 11430973
+    },
+    {
+      "page": 727,
+      "navigationMs": 142,
+      "canvases": 3,
+      "browserRssBytes": 787845120,
+      "heap": 7256978
+    },
+    {
+      "page": 900,
+      "navigationMs": 280,
+      "canvases": 3,
+      "browserRssBytes": 824377344,
+      "heap": 8755966
+    },
+    {
+      "page": 1073,
+      "navigationMs": 117,
+      "canvases": 3,
+      "browserRssBytes": 806473728,
+      "heap": 10743638
+    },
+    {
+      "page": 1246,
+      "navigationMs": 146,
+      "canvases": 3,
+      "browserRssBytes": 806023168,
+      "heap": 13205883
+    },
+    {
+      "page": 1419,
+      "navigationMs": 169,
+      "canvases": 3,
+      "browserRssBytes": 808644608,
+      "heap": 8083369
+    },
+    {
+      "page": 93,
+      "navigationMs": 144,
+      "canvases": 3,
+      "browserRssBytes": 811294720,
+      "heap": 10631245
+    },
+    {
+      "page": 266,
+      "navigationMs": 166,
+      "canvases": 3,
+      "browserRssBytes": 821178368,
+      "heap": 13136130
+    },
+    {
+      "page": 439,
+      "navigationMs": 191,
+      "canvases": 3,
+      "browserRssBytes": 821248000,
+      "heap": 7100587
+    },
+    {
+      "page": 612,
+      "navigationMs": 137,
+      "canvases": 3,
+      "browserRssBytes": 812056576,
+      "heap": 9717607
+    },
+    {
+      "page": 785,
+      "navigationMs": 160,
+      "canvases": 3,
+      "browserRssBytes": 812097536,
+      "heap": 12218209
+    },
+    {
+      "page": 958,
+      "navigationMs": 142,
+      "canvases": 3,
+      "browserRssBytes": 819982336,
+      "heap": 7047453
+    }
+  ]
+}

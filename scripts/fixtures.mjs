@@ -65,3 +65,14 @@ await fixture(12, 'study.pdf', true);
 await fixture(1500, 'large.pdf');
 await writeFile('tests/fixtures/broken.pdf', '%PDF-1.7\nthis is corrupt');
 console.log('Generated original 12-page and 1,500-page synthetic PDFs.');
+
+// Intrinsically rotated crop-box fixture with non-default PDF UserUnit.
+const { readFile } = await import('node:fs/promises');
+const source = await PDFDocument.load(await readFile('tests/fixtures/study.pdf'));
+const rotated = await PDFDocument.create();
+const [cropped] = await rotated.copyPages(source, [0]);
+rotated.addPage(cropped);
+cropped.setCropBox(80, 40, 420, 600);
+cropped.node.set(PDFName.of('Rotate'), PDFNumber.of(90));
+cropped.node.set(PDFName.of('UserUnit'), PDFNumber.of(2));
+await writeFile('tests/fixtures/rotated.pdf', await rotated.save());

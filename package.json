@@ -16,7 +16,8 @@
     "benchmark:core": "node scripts/benchmark-core.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "fixtures:heavy": "node scripts/heavy-fixture.mjs"
+    "fixtures:heavy": "node scripts/heavy-fixture.mjs",
+    "benchmark:ink": "node scripts/benchmark-ink.mjs"
   },
   "dependencies": {
     "@noble/hashes": "^2.4.0",
