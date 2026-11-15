@@ -53,20 +53,16 @@
   let navigation = 0;
   const queue = new RenderQueue();
   const registry = new Map<number, { el: HTMLElement; viewport: PageViewport; box: number[] }>();
-  const scale = $derived(
-    settings.fit === 'width'
-      ? Math.max(0.1, (width - 32) / (settings.rotation % 180 ? fallback.height : fallback.width))
-      : settings.fit === 'page'
-        ? Math.max(
-            0.1,
-            Math.min(
-              (width - 32) / (settings.rotation % 180 ? fallback.height : fallback.width),
-              (height - 32) / (settings.rotation % 180 ? fallback.width : fallback.height),
-            ),
-          )
-        : settings.zoom,
-  );
-  const tops = $derived(offsets(pdf.numPages, measured, fallback, scale, settings.rotation));
+  function pageScale(size: Size) {
+    const w = settings.rotation % 180 ? size.height : size.width;
+    const h = settings.rotation % 180 ? size.width : size.height;
+    if (settings.fit === 'width') return Math.max(0.1, (width - 32) / w);
+    if (settings.fit === 'page')
+      return Math.max(0.1, Math.min((width - 32) / w, (height - 32) / h));
+    return settings.zoom;
+  }
+  const scale = $derived(pageScale(measured.get(current) ?? fallback));
+  const tops = $derived(offsets(pdf.numPages, measured, fallback, pageScale, settings.rotation));
   const pages = $derived(
     settings.mode === 'single'
       ? [current]
@@ -79,7 +75,7 @@
       width,
       ...pages.map((n) => {
         const s = measured.get(n) ?? fallback;
-        return (settings.rotation % 180 ? s.height : s.width) * scale + 32;
+        return (settings.rotation % 180 ? s.height : s.width) * pageScale(s) + 32;
       }),
     ),
   );
@@ -284,11 +280,11 @@
         <PdfPage
           {pdf}
           page={n}
-          {scale}
+          scale={pageScale(dim)}
           rotation={settings.rotation}
           top={settings.mode === 'single' ? 10 : tops[n - 1] + 10}
-          width={(settings.rotation % 180 ? dim.height : dim.width) * scale}
-          height={(settings.rotation % 180 ? dim.width : dim.height) * scale}
+          width={(settings.rotation % 180 ? dim.height : dim.width) * pageScale(dim)}
+          height={(settings.rotation % 180 ? dim.width : dim.height) * pageScale(dim)}
           annotations={index ? JSON.parse(index.page(n)) : []}
           {queue}
           priority={Math.abs(n - current)}

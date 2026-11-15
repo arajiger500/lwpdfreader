@@ -401,3 +401,22 @@ test('an unsaved note cannot be discarded by closing the sidebar or leaving the 
   await page.getByLabel('Toggle document sidebar').click();
   await expect(page.locator('.sidebar')).toContainText('Keep this unsaved thought safe.');
 });
+
+test('fit width keeps mixed-size pages within the portrait viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 820, height: 1180 });
+  await importPdf(page);
+  await expect(page.locator('.pdf-page[data-page="3"]')).toHaveAttribute('data-rendered', 'true');
+  const fits = async (n: number) => {
+    const bounds = await page.locator(`.pdf-page[data-page="${n}"]`).boundingBox();
+    const viewer = await page.locator('.viewer').boundingBox();
+    expect(bounds!.x).toBeGreaterThanOrEqual(viewer!.x);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewer!.x + viewer!.width + 1);
+  };
+  await fits(1);
+  await fits(3);
+  await jump(page, 3);
+  await fits(3);
+  await page.getByLabel('Rotate clockwise').click();
+  await expect(page.locator('.pdf-page[data-page="3"]')).toHaveAttribute('data-rendered', 'true');
+  await fits(3);
+});

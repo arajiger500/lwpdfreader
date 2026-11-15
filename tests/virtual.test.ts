@@ -22,6 +22,16 @@ describe('virtual page window', () => {
   it('tolerates browser subpixel scroll rounding', () => {
     expect(pageAt([0, 1486.24, 2972.48], 1486)).toBe(2);
   });
+  it('supports independent fit scales for mixed dimensions', () => {
+    const tops = offsets(
+      3,
+      new Map([[2, { width: 800, height: 400 }]]),
+      { width: 600, height: 800 },
+      (size) => 600 / size.width,
+      0,
+    );
+    expect(tops).toEqual([0, 820, 1140, 1960]);
+  });
   it('clamps boundary lookups', () => {
     const tops = [0, 100, 200];
     expect(pageAt(tops, -10)).toBe(1);

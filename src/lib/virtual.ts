@@ -6,13 +6,18 @@ export function offsets(
   count: number,
   measured: Map<number, Size>,
   fallback: Size,
-  scale: number,
+  scale: number | ((size: Size) => number),
   rotation: number,
 ): number[] {
   const result = [0];
   for (let i = 1; i <= count; i++) {
     const size = measured.get(i) ?? fallback;
-    result.push(result[i - 1] + (rotation % 180 ? size.width : size.height) * scale + 20);
+    result.push(
+      result[i - 1] +
+        (rotation % 180 ? size.width : size.height) *
+          (typeof scale === 'number' ? scale : scale(size)) +
+        20,
+    );
   }
   return result;
 }
