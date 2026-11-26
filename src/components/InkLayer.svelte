@@ -93,7 +93,7 @@
     };
   });
   onDestroy(() => {
-    finish(false);
+    finish(pointerType === 'touch');
     cancelAnimationFrame(frame);
     erase?.free();
   });
@@ -104,7 +104,7 @@
     return () => {
       void v;
       void tool;
-      finish(false);
+      finish(pointerType === 'touch');
     };
   });
   function point(e: PointerEvent): InkPoint {

@@ -88,7 +88,8 @@ export function documentGestures(node: HTMLElement, options: Options) {
     if (!touch && !mouseHand) {
       if (phase === 'pinch' || settling) consume(e);
       else if (e.pointerType === 'pen' && touches.size) {
-        if (phase === 'ink') inkTarget?.dispatchEvent(new Event('ink-cancel-touch'));
+        if (phase === 'ink')
+          inkTarget?.dispatchEvent(new Event('ink-cancel-touch', { bubbles: true }));
         phase = 'drain';
       }
       return;
@@ -127,7 +128,7 @@ export function documentGestures(node: HTMLElement, options: Options) {
       }
       return;
     }
-    if (phase === 'ink') inkTarget?.dispatchEvent(new Event('ink-cancel-touch'));
+    if (phase === 'ink') inkTarget?.dispatchEvent(new Event('ink-cancel-touch', { bubbles: true }));
     window.getSelection()?.removeAllRanges();
     const [first, second] = touches.keys();
     pair = [first, second];
