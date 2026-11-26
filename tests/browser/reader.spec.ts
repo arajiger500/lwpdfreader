@@ -1,8 +1,9 @@
-import { test, expect, type Page } from '@playwright/test';
+import { chooseFile, test, expect, type Page } from './browser-fixtures';
 import { readFile, writeFile } from 'node:fs/promises';
 async function importPdf(page: Page, file = 'study.pdf') {
   await page.goto('/');
-  await page.getByLabel('Import PDF file', { exact: true }).setInputFiles('tests/fixtures/' + file);
+  const input = page.getByLabel('Import PDF file', { exact: true });
+  await chooseFile(input, 'tests/fixtures/' + file);
   await expect(page.locator('.pdf-page[data-page="1"][data-rendered="true"]')).toBeVisible({
     timeout: 120000,
   });
@@ -70,7 +71,7 @@ test('real PDF reading, annotation persistence, backups and offline launch', asy
   await page.getByRole('button', { name: 'Delete', exact: true }).click();
   await expect(page.locator('.highlight')).toHaveCount(0);
   await page.getByLabel('Back to library').click();
-  await page.getByLabel('Import annotation backup', { exact: true }).setInputFiles({
+  await chooseFile(page.getByLabel('Import annotation backup', { exact: true }), {
     name: 'restore.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(backup)),
@@ -92,9 +93,10 @@ test('real PDF reading, annotation persistence, backups and offline launch', asy
 });
 test('corrupt imports fail clearly without adding a library entry', async ({ page }) => {
   await page.goto('/');
-  await page
-    .getByLabel('Import PDF file', { exact: true })
-    .setInputFiles('tests/fixtures/broken.pdf');
+  await chooseFile(
+    page.getByLabel('Import PDF file', { exact: true }),
+    'tests/fixtures/broken.pdf',
+  );
   await expect(page.getByRole('alert')).toContainText('Could not open this PDF');
   await expect(page.locator('.document-row')).toHaveCount(0);
 });
@@ -218,7 +220,11 @@ test('mixed dimensions, multiline highlights, rotation, region and session setti
         e.getBoundingClientRect(),
       );
       return spans.map((s) => {
-        const r = s.getBoundingClientRect();
+        // PDF.js renders a text span with a font-dependent wrapper. Compare
+        // actual selection bounds, which are the geometry saved by the app.
+        const range = document.createRange();
+        range.selectNodeContents(s);
+        const r = range.getBoundingClientRect();
         return Math.min(
           ...rects.map(
             (h) =>
@@ -256,9 +262,7 @@ test('mixed dimensions, multiline highlights, rotation, region and session setti
   await expect(page.locator('.pdf-page')).toHaveCount(1);
   await expect(page.locator('.highlight')).toHaveCount(1);
   await page.getByLabel('Back to library').click();
-  await page
-    .getByLabel('Import PDF file', { exact: true })
-    .setInputFiles('tests/fixtures/study.pdf');
+  await chooseFile(page.getByLabel('Import PDF file', { exact: true }), 'tests/fixtures/study.pdf');
   await expect(page.getByLabel('Page number', { exact: true })).toHaveValue('3');
   await page.getByLabel('Back to library').click();
   await expect(page.locator('.document-row')).toHaveCount(1);
@@ -286,7 +290,7 @@ test('5,000 annotations: validated restore, bounded sidebar and page lookup', as
     updatedAt: now,
   }));
   const start = Date.now();
-  await page.getByLabel('Import annotation backup', { exact: true }).setInputFiles({
+  await chooseFile(page.getByLabel('Import annotation backup', { exact: true }), {
     name: 'many.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(b)),

@@ -1,0 +1,550 @@
+{
+  "fixture": "illustrated.pdf",
+  "duration": 120000,
+  "browser": "156.0.8078.79",
+  "written": 654,
+  "navigated": 218,
+  "rows": [
+    {
+      "elapsedMs": 5570.720215999999,
+      "navigated": 9,
+      "written": 27,
+      "processes": [
+        {
+          "id": 27269,
+          "type": "browser",
+          "cpuTime": 2.9,
+          "rss": 163512320
+        },
+        {
+          "id": 27371,
+          "type": "renderer",
+          "cpuTime": 0.01,
+          "rss": 35119104
+        },
+        {
+          "id": 27372,
+          "type": "renderer",
+          "cpuTime": 8.49,
+          "rss": 841056256
+        },
+        {
+          "id": 27360,
+          "type": "renderer",
+          "cpuTime": 0.32,
+          "rss": 94695424
+        },
+        {
+          "id": 27314,
+          "type": "GPU",
+          "cpuTime": 3.67,
+          "rss": 73994240
+        },
+        {
+          "id": 27317,
+          "type": "network.mojom.NetworkService",
+          "cpuTime": 0.21,
+          "rss": 71221248
+        },
+        {
+          "id": 27330,
+          "type": "storage.mojom.StorageService",
+          "cpuTime": 0,
+          "rss": 23535616
+        }
+      ],
+      "application": {
+        "canvases": 1,
+        "pixels": 355796,
+        "mainHeap": 12675028
+      }
+    },
+    {
+      "elapsedMs": 17762.257304,
+      "navigated": 30,
+      "written": 90,
+      "processes": [
+        {
+          "id": 27269,
+          "type": "browser",
+          "cpuTime": 5.07,
+          "rss": 163942400
+        },
+        {
+          "id": 27371,
+          "type": "renderer",
+          "cpuTime": 0.01,
+          "rss": 35119104
+        },
+        {
+          "id": 27372,
+          "type": "renderer",
+          "cpuTime": 13.63,
+          "rss": 1020268544
+        },
+        {
+          "id": 27360,
+          "type": "renderer",
+          "cpuTime": 0.32,
+          "rss": 94695424
+        },
+        {
+          "id": 27314,
+          "type": "GPU",
+          "cpuTime": 7.65,
+          "rss": 74014720
+        },
+        {
+          "id": 27317,
+          "type": "network.mojom.NetworkService",
+          "cpuTime": 0.21,
+          "rss": 71221248
+        },
+        {
+          "id": 27330,
+          "type": "storage.mojom.StorageService",
+          "cpuTime": 0,
+          "rss": 23535616
+        }
+      ],
+      "application": {
+        "canvases": 1,
+        "pixels": 355796,
+        "mainHeap": 11877698
+      }
+    },
+    {
+      "elapsedMs": 29868.790654000004,
+      "navigated": 52,
+      "written": 156,
+      "processes": [
+        {
+          "id": 27269,
+          "type": "browser",
+          "cpuTime": 7.35,
+          "rss": 163807232
+        },
+        {
+          "id": 27371,
+          "type": "renderer",
+          "cpuTime": 0.01,
+          "rss": 35119104
+        },
+        {
+          "id": 27372,
+          "type": "renderer",
+          "cpuTime": 18.6,
+          "rss": 1101701120
+        },
+        {
+          "id": 27360,
+          "type": "renderer",
+          "cpuTime": 0.38,
+          "rss": 86904832
+        },
+        {
+          "id": 27314,
+          "type": "GPU",
+          "cpuTime": 11.73,
+          "rss": 74973184
+        },
+        {
+          "id": 27317,
+          "type": "network.mojom.NetworkService",
+          "cpuTime": 0.21,
+          "rss": 71233536
+        },
+        {
+          "id": 27330,
+          "type": "storage.mojom.StorageService",
+          "cpuTime": 0,
+          "rss": 23535616
+        }
+      ],
+      "application": {
+        "canvases": 1,
+        "pixels": 355796,
+        "mainHeap": 11153507
+      }
+    },
+    {
+      "elapsedMs": 41985.819759,
+      "navigated": 74,
+      "written": 222,
+      "processes": [
+        {
+          "id": 27269,
+          "type": "browser",
+          "cpuTime": 9.68,
+          "rss": 163868672
+        },
+        {
+          "id": 27371,
+          "type": "renderer",
+          "cpuTime": 0.01,
+          "rss": 35119104
+        },
+        {
+          "id": 27372,
+          "type": "renderer",
+          "cpuTime": 23.97,
+          "rss": 1119449088
+        },
+        {
+          "id": 27360,
+          "type": "renderer",
+          "cpuTime": 0.38,
+          "rss": 86904832
+        },
+        {
+          "id": 27314,
+          "type": "GPU",
+          "cpuTime": 16.1,
+          "rss": 75583488
+        },
+        {
+          "id": 27317,
+          "type": "network.mojom.NetworkService",
+          "cpuTime": 0.21,
+          "rss": 71233536
+        },
+        {
+          "id": 27330,
+          "type": "storage.mojom.StorageService",
+          "cpuTime": 0,
+          "rss": 23535616
+        }
+      ],
+      "application": {
+        "canvases": 1,
+        "pixels": 355796,
+        "mainHeap": 12414154
+      }
+    },
+    {
+      "elapsedMs": 54532.994195,
+      "navigated": 97,
+      "written": 291,
+      "processes": [
+        {
+          "id": 27269,
+          "type": "browser",
+          "cpuTime": 11.98,
+          "rss": 163704832
+        },
+        {
+          "id": 27371,
+          "type": "renderer",
+          "cpuTime": 0.01,
+          "rss": 35123200
+        },
+        {
+          "id": 27372,
+          "type": "renderer",
+          "cpuTime": 29.02,
+          "rss": 1152274432
+        },
+        {
+          "id": 27360,
+          "type": "renderer",
+          "cpuTime": 0.38,
+          "rss": 86753280
+        },
+        {
+          "id": 27314,
+          "type": "GPU",
+          "cpuTime": 20.4,
+          "rss": 73838592
+        },
+        {
+          "id": 27317,
+          "type": "network.mojom.NetworkService",
+          "cpuTime": 0.22,
+          "rss": 70967296
+        },
+        {
+          "id": 27330,
+          "type": "storage.mojom.StorageService",
+          "cpuTime": 0,
+          "rss": 23498752
+        }
+      ],
+      "application": {
+        "canvases": 1,
+        "pixels": 355796,
+        "mainHeap": 18133776
+      }
+    },
+    {
+      "elapsedMs": 66601.127571,
+      "navigated": 119,
+      "written": 357,
+      "processes": [
+        {
+          "id": 27269,
+          "type": "browser",
+          "cpuTime": 14.11,
+          "rss": 163090432
+        },
+        {
+          "id": 27371,
+          "type": "renderer",
+          "cpuTime": 0.01,
+          "rss": 35123200
+        },
+        {
+          "id": 27372,
+          "type": "renderer",
+          "cpuTime": 33.94,
+          "rss": 1201516544
+        },
+        {
+          "id": 27360,
+          "type": "renderer",
+          "cpuTime": 0.42,
+          "rss": 83398656
+        },
+        {
+          "id": 27314,
+          "type": "GPU",
+          "cpuTime": 24.43,
+          "rss": 75534336
+        },
+        {
+          "id": 27317,
+          "type": "network.mojom.NetworkService",
+          "cpuTime": 0.22,
+          "rss": 70963200
+        },
+        {
+          "id": 27330,
+          "type": "storage.mojom.StorageService",
+          "cpuTime": 0,
+          "rss": 23498752
+        }
+      ],
+      "application": {
+        "canvases": 1,
+        "pixels": 355796,
+        "mainHeap": 10804761
+      }
+    },
+    {
+      "elapsedMs": 78717.988482,
+      "navigated": 140,
+      "written": 420,
+      "processes": [
+        {
+          "id": 27269,
+          "type": "browser",
+          "cpuTime": 16.2,
+          "rss": 163356672
+        },
+        {
+          "id": 27371,
+          "type": "renderer",
+          "cpuTime": 0.01,
+          "rss": 35123200
+        },
+        {
+          "id": 27372,
+          "type": "renderer",
+          "cpuTime": 38.64,
+          "rss": 1193095168
+        },
+        {
+          "id": 27360,
+          "type": "renderer",
+          "cpuTime": 0.42,
+          "rss": 83382272
+        },
+        {
+          "id": 27314,
+          "type": "GPU",
+          "cpuTime": 28.37,
+          "rss": 73977856
+        },
+        {
+          "id": 27317,
+          "type": "network.mojom.NetworkService",
+          "cpuTime": 0.22,
+          "rss": 70963200
+        },
+        {
+          "id": 27330,
+          "type": "storage.mojom.StorageService",
+          "cpuTime": 0,
+          "rss": 23498752
+        }
+      ],
+      "application": {
+        "canvases": 1,
+        "pixels": 355796,
+        "mainHeap": 10703967
+      }
+    },
+    {
+      "elapsedMs": 90950.684149,
+      "navigated": 163,
+      "written": 489,
+      "processes": [
+        {
+          "id": 27269,
+          "type": "browser",
+          "cpuTime": 18.62,
+          "rss": 163389440
+        },
+        {
+          "id": 27371,
+          "type": "renderer",
+          "cpuTime": 0.01,
+          "rss": 35123200
+        },
+        {
+          "id": 27372,
+          "type": "renderer",
+          "cpuTime": 44.03,
+          "rss": 1194426368
+        },
+        {
+          "id": 27360,
+          "type": "renderer",
+          "cpuTime": 0.42,
+          "rss": 83386368
+        },
+        {
+          "id": 27314,
+          "type": "GPU",
+          "cpuTime": 33.01,
+          "rss": 75534336
+        },
+        {
+          "id": 27317,
+          "type": "network.mojom.NetworkService",
+          "cpuTime": 0.22,
+          "rss": 70963200
+        },
+        {
+          "id": 27330,
+          "type": "storage.mojom.StorageService",
+          "cpuTime": 0,
+          "rss": 23498752
+        }
+      ],
+      "application": {
+        "canvases": 1,
+        "pixels": 355796,
+        "mainHeap": 18036421
+      }
+    },
+    {
+      "elapsedMs": 103472.903824,
+      "navigated": 186,
+      "written": 558,
+      "processes": [
+        {
+          "id": 27269,
+          "type": "browser",
+          "cpuTime": 20.98,
+          "rss": 163487744
+        },
+        {
+          "id": 27371,
+          "type": "renderer",
+          "cpuTime": 0.01,
+          "rss": 35115008
+        },
+        {
+          "id": 27372,
+          "type": "renderer",
+          "cpuTime": 49.27,
+          "rss": 1232076800
+        },
+        {
+          "id": 27360,
+          "type": "renderer",
+          "cpuTime": 0.42,
+          "rss": 83386368
+        },
+        {
+          "id": 27314,
+          "type": "GPU",
+          "cpuTime": 37.51,
+          "rss": 73969664
+        },
+        {
+          "id": 27317,
+          "type": "network.mojom.NetworkService",
+          "cpuTime": 0.22,
+          "rss": 70955008
+        },
+        {
+          "id": 27330,
+          "type": "storage.mojom.StorageService",
+          "cpuTime": 0,
+          "rss": 23498752
+        }
+      ],
+      "application": {
+        "canvases": 1,
+        "pixels": 355796,
+        "mainHeap": 14157345
+      }
+    },
+    {
+      "elapsedMs": 115925.922394,
+      "navigated": 210,
+      "written": 630,
+      "processes": [
+        {
+          "id": 27269,
+          "type": "browser",
+          "cpuTime": 23.33,
+          "rss": 163598336
+        },
+        {
+          "id": 27371,
+          "type": "renderer",
+          "cpuTime": 0.01,
+          "rss": 35106816
+        },
+        {
+          "id": 27372,
+          "type": "renderer",
+          "cpuTime": 54.29,
+          "rss": 1234743296
+        },
+        {
+          "id": 27360,
+          "type": "renderer",
+          "cpuTime": 0.42,
+          "rss": 83390464
+        },
+        {
+          "id": 27314,
+          "type": "GPU",
+          "cpuTime": 42.1,
+          "rss": 74158080
+        },
+        {
+          "id": 27317,
+          "type": "network.mojom.NetworkService",
+          "cpuTime": 0.22,
+          "rss": 70946816
+        },
+        {
+          "id": 27330,
+          "type": "storage.mojom.StorageService",
+          "cpuTime": 0,
+          "rss": 23498752
+        }
+      ],
+      "application": {
+        "canvases": 1,
+        "pixels": 355796,
+        "mainHeap": 24845925
+      }
+    }
+  ],
+  "date": "2026-11-26T06:10:15.536Z"
+}

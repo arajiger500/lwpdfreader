@@ -23,6 +23,7 @@
     trash: 'M4 6h16 M9 6V3h6v3 M6 6l1 15h10l1-15 M10 10v7 M14 10v7',
     close: 'm6 6 12 12 M6 18 18 6',
     check: 'm5 12 4 4L19 6',
+    whiteboard: 'M3 4h18v13H3z M8 21l2-4 M16 21l-2-4 M7 13l3-3 3 2 4-4',
     note: 'M4 3h16v14l-5 4H4z M8 8h8 M8 12h6',
     highlight: 'm5 14 9-10 6 6-10 9H5z M4 21h16 M8 11l5 5',
     region: 'M4 9V4h5 M15 4h5v5 M20 15v5h-5 M9 20H4v-5',

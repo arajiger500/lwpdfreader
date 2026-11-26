@@ -69,6 +69,7 @@
     <input
       class="visually-hidden"
       type="file"
+      disabled={busy}
       accept="application/pdf,.pdf"
       bind:this={picker}
       aria-label="Import PDF file"
@@ -81,6 +82,7 @@
     <input
       class="visually-hidden"
       type="file"
+      disabled={busy}
       accept="application/json,.json"
       bind:this={restore}
       aria-label="Import annotation backup"

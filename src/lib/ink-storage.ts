@@ -1,4 +1,5 @@
 import { database, abort } from './storage';
+import { boardIdFromInk, BOARD_SIZE } from './whiteboard-storage';
 import { validateStrokes } from './core';
 import type { InkChange, Stroke } from './ink-types';
 export async function loadPageInk(documentId: string, page: number): Promise<Stroke[]> {
@@ -16,11 +17,26 @@ export async function applyInkChange(change: InkChange): Promise<Stroke[]> {
   )
     throw new Error('Ink command crosses document or page boundaries.');
   const db = await database();
-  const tx = db.transaction(['documents', 'ink', 'inkDeleted'], 'readwrite');
+  const boardId = boardIdFromInk(change.documentId);
+  const tx = db.transaction(
+    [boardId ? 'whiteboards' : 'documents', 'ink', 'inkDeleted'],
+    'readwrite',
+  );
   try {
-    const doc = await tx.objectStore('documents').get(change.documentId);
-    if (!doc || change.page < 1 || change.page > doc.pageCount)
-      throw new Error('Ink does not belong to a valid page.');
+    if (boardId) {
+      const board = await tx.objectStore('whiteboards').get(boardId);
+      if (
+        !board ||
+        board.deleted ||
+        change.page !== 1 ||
+        [...before, ...after].some((s) => s.pageWidth !== BOARD_SIZE || s.pageHeight !== BOARD_SIZE)
+      )
+        throw new Error('Ink does not belong to an available whiteboard.');
+    } else {
+      const doc = await tx.objectStore('documents').get(change.documentId);
+      if (!doc || change.page < 1 || change.page > doc.pageCount)
+        throw new Error('Ink does not belong to a valid page.');
+    }
     let time = Date.now();
     for (const s of before) {
       const old = await tx.objectStore('ink').get(s.id);

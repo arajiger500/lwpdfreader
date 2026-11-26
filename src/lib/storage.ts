@@ -3,6 +3,8 @@ import type { Annotation, DocumentMeta, Progress } from './types';
 import { validateAnnotations } from './core';
 import type { Stroke, InkDeleted } from './ink-types';
 
+import type { Whiteboard, BoardAnchor } from './whiteboard-storage';
+
 interface Schema extends DBSchema {
   documents: { key: string; value: DocumentMeta };
   files: { key: string; value: Blob };
@@ -13,6 +15,12 @@ interface Schema extends DBSchema {
     indexes: { 'by-document': string; 'by-page': [string, number] };
   };
   inkDeleted: { key: string; value: InkDeleted; indexes: { 'by-document': string } };
+  whiteboards: { key: string; value: Whiteboard };
+  boardAnchors: {
+    key: string;
+    value: BoardAnchor;
+    indexes: { 'by-document': string; 'by-board': string };
+  };
   settings: { key: string; value: unknown };
 }
 
@@ -23,11 +31,17 @@ export function migrateDatabase(db: IDBPDatabase<Schema>, oldVersion: number) {
     db.createObjectStore('annotations', { keyPath: 'id' }).createIndex('by-document', 'documentId');
     db.createObjectStore('settings');
   }
-  if (oldVersion < 2) {
+  if (oldVersion < 2 && db.version >= 2) {
     const ink = db.createObjectStore('ink', { keyPath: 'id' });
     ink.createIndex('by-document', 'documentId');
     ink.createIndex('by-page', ['documentId', 'page']);
     db.createObjectStore('inkDeleted', { keyPath: 'id' }).createIndex('by-document', 'documentId');
+  }
+  if (oldVersion < 3 && db.version >= 3 && !db.objectStoreNames.contains('whiteboards')) {
+    db.createObjectStore('whiteboards', { keyPath: 'id' });
+    const anchors = db.createObjectStore('boardAnchors', { keyPath: 'id' });
+    anchors.createIndex('by-document', 'documentId');
+    anchors.createIndex('by-board', 'boardId');
   }
 }
 
@@ -48,7 +62,7 @@ export async function abort(
 
 let connection: Promise<IDBPDatabase<Schema>> | undefined;
 export function database() {
-  return (connection ??= openDB<Schema>('lwpdfreader', 2, {
+  return (connection ??= openDB<Schema>('lwpdfreader', 3, {
     upgrade: migrateDatabase,
     blocking() {
       void connection?.then((db) => db.close());
@@ -129,12 +143,16 @@ export async function saveProgress(id: string, progress: Progress) {
 export async function removeDocument(id: string) {
   const db = await database();
   const tx = db.transaction(
-    ['documents', 'files', 'annotations', 'settings', 'ink', 'inkDeleted'],
+    ['documents', 'files', 'annotations', 'settings', 'ink', 'inkDeleted', 'boardAnchors'],
     'readwrite',
   );
   try {
     await tx.objectStore('documents').delete(id);
     await tx.objectStore('files').delete(id);
+    const anchors = tx.objectStore('boardAnchors');
+    for (const anchor of await anchors.index('by-document').getAll(id)) {
+      if (!anchor.deleted) await anchors.put({ ...anchor, deleted: true });
+    }
     for (const key of await tx.objectStore('annotations').index('by-document').getAllKeys(id))
       await tx.objectStore('annotations').delete(key);
     for (const store of ['ink', 'inkDeleted'] as const) {

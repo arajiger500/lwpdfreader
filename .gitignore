@@ -9,3 +9,5 @@ test-results/
 public/pdf/
 tests/fixtures/heavy.pdf
 test-results-heavy/
+
+/tests/fixtures/illustrated.pdf

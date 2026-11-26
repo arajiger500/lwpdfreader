@@ -1,0 +1,52 @@
+{
+  "samplesPerSecond": 120,
+  "oneEuro": {
+    "minCutoffHz": 2,
+    "speedGain": 0.15,
+    "derivativeCutoffHz": 1
+  },
+  "rows": [
+    {
+      "mode": "baseline",
+      "jitterAroundMeanPx": 0.44634007646518686,
+      "slowRmsErrorPx": 0.47546271036108567,
+      "fastCornerMaxErrorPx": 1.6153846153846416,
+      "maxPressureStep": 0.7
+    },
+    {
+      "mode": "one-euro",
+      "jitterAroundMeanPx": 0.2230138303052197,
+      "slowRmsErrorPx": 0.851569158144259,
+      "fastCornerMaxErrorPx": 1.2544199790897401,
+      "maxPressureStep": 0.7
+    },
+    {
+      "mode": "off",
+      "jitterAroundMeanPx": 0.9192388155425173,
+      "slowRmsErrorPx": 0.9192388155425173,
+      "fastCornerMaxErrorPx": 0,
+      "maxPressureStep": 0.7
+    },
+    {
+      "mode": "low",
+      "jitterAroundMeanPx": 0.59452894240094,
+      "slowRmsErrorPx": 0.5993376754423588,
+      "fastCornerMaxErrorPx": 0.45410745825489585,
+      "maxPressureStep": 0.5461575818298268
+    },
+    {
+      "mode": "medium",
+      "jitterAroundMeanPx": 0.3430061772577769,
+      "slowRmsErrorPx": 0.4258191848769491,
+      "fastCornerMaxErrorPx": 1.2000000000000015,
+      "maxPressureStep": 0.37183892260183965
+    },
+    {
+      "mode": "high",
+      "jitterAroundMeanPx": 0.23498669128799599,
+      "slowRmsErrorPx": 0.515956038012796,
+      "fastCornerMaxErrorPx": 1.8600000000000136,
+      "maxPressureStep": 0.2706288133517085
+    }
+  ]
+}

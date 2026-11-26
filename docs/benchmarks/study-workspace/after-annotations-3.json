@@ -1,0 +1,10 @@
+{
+  "date": "2026-11-26T06:06:08.944Z",
+  "environment": "Chromium on Linux, 1,500-page vector fixture",
+  "annotations": 5000,
+  "backupBytes": 1532681,
+  "importMs": 979,
+  "reopenMs": 503,
+  "distantNavigationMs": 169,
+  "sidebarMountedItems": 200
+}

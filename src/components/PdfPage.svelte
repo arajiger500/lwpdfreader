@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Icon from './Icon.svelte';
+  import type { AnchorPosition, BoardAnchor } from '../lib/whiteboard-storage';
   import InkLayer from './InkLayer.svelte';
   import type { InkSession } from '../lib/ink-session';
   import { writingTool, type InkSettings } from '../lib/ink-types';
@@ -18,8 +20,13 @@
     height,
     annotations,
     queue,
+    paused,
     priority,
     regionMode,
+    attaching,
+    anchors,
+    onAttach,
+    onOpenBoard,
     inkSession,
     inkSettings,
     onSize,
@@ -37,8 +44,13 @@
     height: number;
     annotations: Annotation[];
     queue: RenderQueue;
+    paused: boolean;
     priority: number;
     regionMode: boolean;
+    attaching: boolean;
+    anchors: (BoardAnchor & { title: string })[];
+    onAttach: (position: AnchorPosition) => void;
+    onOpenBoard: (anchor: BoardAnchor) => void;
     inkSession: InkSession;
     inkSettings: InkSettings;
     onSize: (n: number, w: number, h: number) => void;
@@ -48,26 +60,51 @@
     onRegion: (page: number, rect: Rect) => void;
   } = $props();
   let host: HTMLDivElement;
-  let canvas: HTMLCanvasElement;
+  let raster: HTMLDivElement;
   let text: HTMLDivElement;
-  let viewport = $state<PageViewport>();
-  let box = $state<number[]>([]);
+  let pageProxy = $state.raw<PDFPageProxy>();
+  const viewport = $derived(
+    pageProxy?.getViewport({ scale, rotation: (pageProxy.rotate + rotation) % 360 }),
+  );
+  const box = $derived(pageProxy?.view ?? []);
   let rendered = $state(false);
   let noText = $state(false);
   let failed = $state(false);
   let drag = $state<{ x: number; y: number; endX: number; endY: number }>();
-  let pageProxy: PDFPageProxy | undefined;
+  let displayed: HTMLCanvasElement | undefined;
+  let displayedKey = '';
+  let displayedRotation: number | undefined;
+  let textLayer: TextLayer | undefined;
+  let disposed = false;
+
+  function layoutText(v: PageViewport) {
+    text.style.setProperty('--total-scale-factor', String(v.scale));
+    // Explicit unrotated dimensions also work in WebKit versions without CSS round().
+    text.style.width = (v.rotation % 180 ? v.height : v.width) + 'px';
+    text.style.height = (v.rotation % 180 ? v.width : v.height) + 'px';
+  }
+  $effect(() => {
+    const v = viewport;
+    if (!v) return;
+    layoutText(v);
+    textLayer?.update({ viewport: v });
+    raster.style.visibility = displayedRotation === v.rotation ? '' : 'hidden';
+    if (textLayer) onReady(page, host, v, box);
+  });
+
   $effect(() => {
     const doc = pdf,
       n = page,
       s = scale,
       r = rotation;
+    const key = s + ':' + r;
+    if (paused || (displayedKey === key && textLayer)) return;
     const controller = new AbortController();
     let task: RenderTask | undefined;
     let layer: TextLayer | undefined;
-    let localPage: PDFPageProxy | undefined;
+    let staged: HTMLCanvasElement | undefined;
+    let continuation = 0;
     rendered = false;
-    noText = false;
     failed = false;
     const started = performance.now();
     void queue
@@ -75,48 +112,61 @@
         untrack(() => priority),
         controller.signal,
         async () => {
-          if (controller.signal.aborted) return;
-          localPage = await doc.getPage(n);
+          const localPage = await (untrack(() => pageProxy) ?? doc.getPage(n));
           if (controller.signal.aborted) return;
           pageProxy = localPage;
           const native = localPage.getViewport({ scale: 1, rotation: localPage.rotate });
           onSize(n, native.width, native.height);
           const v = localPage.getViewport({ scale: s, rotation: (localPage.rotate + r) % 360 });
-          viewport = v;
-          box = localPage.view;
-          const ratio = Math.min(
-            window.devicePixelRatio || 1,
-            2,
-            Math.sqrt(4_000_000 / (v.width * v.height)),
-            4096 / v.width,
-            4096 / v.height,
-          );
-          canvas.width = Math.max(1, Math.floor(v.width * ratio));
-          canvas.height = Math.max(1, Math.floor(v.height * ratio));
-          canvas.style.width = v.width + 'px';
-          canvas.style.height = v.height + 'px';
-          task = localPage.render({ canvas, viewport: v, transform: [ratio, 0, 0, ratio, 0, 0] });
-          task.onContinue = (continueRender: () => void) => {
-            requestAnimationFrame(() => {
-              if (!controller.signal.aborted) continueRender();
+          if (displayedKey !== key) {
+            const ratio = Math.min(
+              window.devicePixelRatio || 1,
+              2,
+              Math.sqrt(4_000_000 / (v.width * v.height)),
+              4096 / v.width,
+              4096 / v.height,
+            );
+            const canvas = (staged = document.createElement('canvas'));
+            canvas.width = Math.max(1, Math.floor(v.width * ratio));
+            canvas.height = Math.max(1, Math.floor(v.height * ratio));
+            canvas.setAttribute('aria-label', 'PDF page ' + n);
+            task = localPage.render({ canvas, viewport: v, transform: [ratio, 0, 0, ratio, 0, 0] });
+            task.onContinue = (resume: () => void) => {
+              continuation = requestAnimationFrame(() => {
+                if (!controller.signal.aborted) resume();
+              });
+            };
+            try {
+              await task.promise;
+            } finally {
+              if (disposed) localPage.cleanup();
+            }
+            if (controller.signal.aborted) return;
+            raster.replaceChildren(canvas);
+            if (displayed) displayed.width = displayed.height = 0;
+            displayed = canvas;
+            displayedKey = key;
+            displayedRotation = v.rotation;
+            raster.style.visibility = '';
+            staged = undefined;
+          }
+          if (!textLayer) {
+            const { TextLayer } = await pdfEngine();
+            if (controller.signal.aborted) return;
+            text.replaceChildren();
+            layoutText(v);
+            layer = new TextLayer({
+              textContentSource: localPage.streamTextContent(),
+              container: text,
+              viewport: v,
             });
-          };
-          await task.promise;
-          if (controller.signal.aborted) return;
-          text.replaceChildren();
-          text.style.setProperty('--total-scale-factor', String(v.scale));
-          const { TextLayer } = await pdfEngine();
-          layer = new TextLayer({
-            textContentSource: localPage.streamTextContent(),
-            container: text,
-            viewport: v,
-          });
-          // Set explicit unrotated layer dimensions; CSS round() is absent in older Safari.
-          text.style.width = (v.rotation % 180 ? v.height : v.width) + 'px';
-          text.style.height = (v.rotation % 180 ? v.width : v.height) + 'px';
-          await layer.render();
-          if (controller.signal.aborted) return;
-          noText = layer.textContentItemsStr.every((s) => !s.trim());
+            layoutText(v);
+            await layer.render();
+            if (controller.signal.aborted) return;
+            noText = layer.textContentItemsStr.every((item) => !item.trim());
+            textLayer = layer;
+            layer = undefined;
+          }
           rendered = true;
           onReady(n, host, v, localPage.view);
           host.dataset.renderMs = (performance.now() - started).toFixed(1);
@@ -128,39 +178,37 @@
           );
         },
       )
-      .catch((e) => {
+      .catch((error) => {
         if (!controller.signal.aborted) {
           failed = true;
-          onError(e);
+          onError(error);
         }
       });
     return () => {
       controller.abort();
+      cancelAnimationFrame(continuation);
       task?.cancel();
       layer?.cancel();
-      onReady(n, null);
-      canvas.width = 0;
-      canvas.height = 0;
-      text.replaceChildren();
-      void task?.promise.catch(() => {}).finally(() => localPage?.cleanup());
+      if (staged) staged.width = staged.height = 0;
     };
   });
   onDestroy(() => {
+    disposed = true;
+    if (displayed) displayed.width = displayed.height = 0;
+    onReady(page, null);
     pageProxy?.cleanup();
   });
   function click(e: MouseEvent) {
-    if (
-      writingTool(inkSettings.tool) ||
-      regionMode ||
-      !viewport ||
-      !window.getSelection()?.isCollapsed
-    )
+    if (!viewport || regionMode) return;
+    if (!attaching && (writingTool(inkSettings.tool) || !window.getSelection()?.isCollapsed))
       return;
     const b = host.getBoundingClientRect();
     const [x, y] = viewport.convertToPdfPoint(e.clientX - b.left, e.clientY - b.top);
     const nx = (x - box[0]) / (box[2] - box[0]),
       ny = (y - box[1]) / (box[3] - box[1]);
-    onHit(page, nx, ny);
+    if (attaching)
+      onAttach({ page, x: Math.max(0, Math.min(1, nx)), y: Math.max(0, Math.min(1, ny)) });
+    else onHit(page, nx, ny);
   }
   function pointerDown(e: PointerEvent) {
     if (!regionMode || !viewport) return;
@@ -208,6 +256,7 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions a11y_click_events_have_key_events -->
 <div
   class:region-mode={regionMode}
+  class:attaching
   class:inking={writingTool(inkSettings.tool)}
   class:hand-mode={inkSettings.tool === 'hand'}
   class="pdf-page"
@@ -227,11 +276,12 @@
   onpointermove={pointerMove}
   onpointerup={pointerUp}
   onpointercancel={() => (drag = undefined)}
+  onlostpointercapture={() => (drag = undefined)}
 >
   {#if !rendered}<div class="page-loading">
       {failed ? 'Page could not be rendered' : 'Loading page ' + page + '…'}
     </div>{/if}
-  <canvas bind:this={canvas} aria-label={'PDF page ' + page}></canvas>
+  <div class="page-raster" bind:this={raster}></div>
   <div class="highlights" aria-hidden="true">
     {#if viewport}{#each annotations.filter((a) => a.kind === 'highlight') as a (a.id)}{#each a.rects as r}{@const s =
             normalizedToScreen(r, viewport, box)}
@@ -250,9 +300,30 @@
       {page}
       {viewport}
       {box}
-      settings={inkSettings}
+      settings={attaching ? { ...inkSettings, tool: 'hand' } : inkSettings}
       {onError}
     />{/if}
+  {#if viewport}
+    {#each anchors as anchor (anchor.id)}
+      {@const [x, y] = viewport.convertToViewportPoint(
+        box[0] + anchor.x * (box[2] - box[0]),
+        box[1] + anchor.y * (box[3] - box[1]),
+      )}
+      <button
+        class="board-marker"
+        aria-label={'Open whiteboard: ' + anchor.title}
+        title={anchor.title}
+        style:left={x + 'px'}
+        style:top={y + 'px'}
+        onclick={(e) => {
+          e.stopPropagation();
+          onOpenBoard(anchor);
+        }}
+      >
+        <Icon name="whiteboard" size={14} />
+      </button>
+    {/each}
+  {/if}
   {#if noText}<div class="no-text">Image-only page · Use Region highlight to mark an area</div>{/if}
   {#if drag}<div
       class="region-draft"
