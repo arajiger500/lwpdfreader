@@ -1,10 +1,10 @@
-import { test, expect, type Page } from './browser-fixtures';
+import { chooseFile, test, expect, type Page } from './browser-fixtures';
 import { readFile, writeFile } from 'node:fs/promises';
 import sharp from 'sharp';
 async function open(page: Page, file = process.env.LWPDF_INK_FIXTURE ?? 'study.pdf') {
   await page.goto('/');
   const input = page.getByLabel('Import PDF file', { exact: true });
-  await input.setInputFiles('tests/fixtures/' + file);
+  await chooseFile(input, 'tests/fixtures/' + file);
   await expect(page.locator('.pdf-page[data-page="1"][data-rendered="true"]')).toBeVisible({
     timeout: 120000,
   });
@@ -149,7 +149,7 @@ test('pen, translucent marker, precision erase, undo/redo, reload and portable b
   await page.getByLabel('Undo ink').click();
   await expect(page.locator('.ink-marker-layer [data-stroke]')).toHaveCount(2);
   await page.getByLabel('Back to library').click();
-  await page.getByLabel('Import annotation backup', { exact: true }).setInputFiles({
+  await chooseFile(page.getByLabel('Import annotation backup', { exact: true }), {
     name: 'ink.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(data)),
@@ -349,9 +349,7 @@ test('many handwritten annotations reopen without mounting the whole document', 
 }) => {
   test.setTimeout(150000);
   await page.goto('/');
-  await page
-    .getByLabel('Import PDF file', { exact: true })
-    .setInputFiles('tests/fixtures/large.pdf');
+  await chooseFile(page.getByLabel('Import PDF file', { exact: true }), 'tests/fixtures/large.pdf');
   await expect(page.locator('.pdf-page[data-page="1"][data-rendered="true"]')).toBeVisible();
   await page.getByLabel('Back to library').click();
   const download = page.waitForEvent('download');
@@ -380,7 +378,7 @@ test('many handwritten annotations reopen without mounting the whole document', 
     updatedAt: now + i,
   }));
   const imported = Date.now();
-  await page.getByLabel('Import annotation backup', { exact: true }).setInputFiles({
+  await chooseFile(page.getByLabel('Import annotation backup', { exact: true }), {
     name: 'handwriting.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(b)),

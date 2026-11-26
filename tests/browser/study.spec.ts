@@ -1,9 +1,9 @@
-import { expect, test, type Page } from './browser-fixtures';
+import { chooseFile, expect, test, type Page } from './browser-fixtures';
 
 async function open(page: Page, fixture = 'study.pdf') {
   await page.goto('/');
   const input = page.getByLabel('Import PDF file');
-  await input.setInputFiles('tests/fixtures/' + fixture);
+  await chooseFile(input, 'tests/fixtures/' + fixture);
   await expect(page.locator('.pdf-page[data-page="1"]')).toHaveAttribute('data-rendered', 'true');
   await page.getByLabel('Reading mode').selectOption('single');
   await expect(page.locator('.pdf-page')).toHaveCount(1);
@@ -30,6 +30,12 @@ for (const tool of tools) {
     const pdf = page.locator('.pdf-page');
     await expect(pdf).toHaveAttribute('data-rendered', 'true');
     await expect(page.locator('.ink-layer')).toHaveAttribute('data-ink-loaded', 'true');
+    const existingStroke = tool === 'Eraser tool' ? 1 : 0;
+    if (existingStroke) {
+      await page.getByRole('button', { name: 'Pen tool', exact: true }).click();
+      await page.mouse.click(505, 400);
+      await expect(page.getByLabel('Undo ink')).toBeEnabled();
+    }
     await page.getByRole('button', { name: tool, exact: true }).click();
     await page.getByLabel('Tool options').click();
     await page.getByLabel('Draw with a finger').check();
@@ -74,7 +80,7 @@ for (const tool of tools) {
       'aria-pressed',
       'true',
     );
-    await expect(page.locator('[data-stroke]')).toHaveCount(0);
+    await expect(page.locator('[data-stroke]')).toHaveCount(existingStroke);
 
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [left, right] });
     await cdp.send('Input.dispatchTouchEvent', {
@@ -90,7 +96,7 @@ for (const tool of tools) {
     expect(Math.abs(panned.x - (after.x - 25))).toBeLessThan(4);
     expect(Math.abs(panned.width - after.width)).toBeLessThan(1);
     await expect(page.locator('.viewer')).toHaveAttribute('data-measured-renders', '1');
-    await expect(page.locator('[data-stroke]')).toHaveCount(0);
+    await expect(page.locator('[data-stroke]')).toHaveCount(existingStroke);
     await cdp.detach();
   });
 }

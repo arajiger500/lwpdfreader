@@ -1,4 +1,4 @@
-import { test as base } from '@playwright/test';
+import { test as base, expect, type Locator } from '@playwright/test';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -29,3 +29,8 @@ export const test = base.extend({
     }
   },
 });
+
+export async function chooseFile(input: Locator, file: Parameters<Locator['setInputFiles']>[0]) {
+  await expect(input).toBeEnabled();
+  await input.setInputFiles(file);
+}
