@@ -6,6 +6,10 @@ import { writeFile, mkdir } from 'node:fs/promises';
 const pdf = await PDFDocument.create();
 const font = await pdf.embedFont(StandardFonts.TimesRoman);
 const images = [];
+const imageCount = Number(process.env.LWPDF_FIXTURE_IMAGES ?? 64);
+if (!Number.isSafeInteger(imageCount) || imageCount < 1 || imageCount > 192)
+  throw new Error('LWPDF_FIXTURE_IMAGES must be an integer from 1 to 192.');
+const illustrated = imageCount !== 64;
 let state = 12345;
 function next() {
   state ^= state << 13;
@@ -13,7 +17,7 @@ function next() {
   state ^= state << 5;
   return state & 255;
 }
-for (let i = 0; i < 64; i++) {
+for (let i = 0; i < imageCount; i++) {
   const pixels = Buffer.alloc(2048 * 2048 * 3);
   for (let j = 0; j < pixels.length; j++) pixels[j] = next();
   const jpeg = await sharp(pixels, { raw: { width: 2048, height: 2048, channels: 3 } })
@@ -29,7 +33,29 @@ for (let i = 0; i < 1500; i++) {
     size: 14,
     font,
   });
-  p.drawImage(images[i % images.length], { x: 40, y: 150, width: 532, height: 532 });
+  if (illustrated) {
+    p.drawImage(images[i % images.length], { x: 40, y: 400, width: 252, height: 252 });
+    p.drawImage(images[(i * 7 + 1) % images.length], { x: 320, y: 400, width: 252, height: 252 });
+    p.drawText('Figure A. Study the structure and compare the layers.', {
+      x: 40,
+      y: 375,
+      size: 10,
+      font,
+    });
+    p.drawText('Figure B. Identify the changes between panels.', {
+      x: 320,
+      y: 375,
+      size: 10,
+      font,
+    });
+    const paragraph =
+      'Compare the observations in both panels. Explain how changes in scale affect the interpretation.';
+    for (let row = 0; row < 13; row++) {
+      p.drawText(paragraph, { x: 40, y: 342 - row * 17, size: 12, font });
+    }
+  } else {
+    p.drawImage(images[i % images.length], { x: 40, y: 150, width: 532, height: 532 });
+  }
   p.drawText('Select this text to test annotations on an illustrated page.', {
     x: 40,
     y: 100,
@@ -40,5 +66,5 @@ for (let i = 0; i < 1500; i++) {
 }
 await mkdir('tests/fixtures', { recursive: true });
 const bytes = await pdf.save();
-await writeFile('tests/fixtures/heavy.pdf', bytes);
+await writeFile('tests/fixtures/' + (illustrated ? 'illustrated.pdf' : 'heavy.pdf'), bytes);
 console.log(`Generated ${bytes.length} bytes, 1,500 illustrated pages. Not a real textbook.`);

@@ -33,6 +33,7 @@ export interface InkChange {
   after: Stroke[];
 }
 export type InkTool = 'hand' | 'text' | 'pen' | 'marker' | 'eraser';
+export type Stabilization = 'off' | 'low' | 'medium' | 'high';
 export interface InkSettings {
   version: 1;
   tool: InkTool;
@@ -44,7 +45,7 @@ export interface InkSettings {
   eraserMode: 'stroke' | 'precision';
   eraserTarget: 'pen' | 'marker' | 'both';
   fingerDrawing: boolean;
-  smoothing: boolean;
+  stabilization: Stabilization;
   collapsed: boolean;
 }
 export const defaultInkSettings = (): InkSettings => ({
@@ -58,7 +59,7 @@ export const defaultInkSettings = (): InkSettings => ({
   eraserMode: 'precision',
   eraserTarget: 'both',
   fingerDrawing: false,
-  smoothing: true,
+  stabilization: 'medium',
   collapsed: false,
 });
 export const writingTool = (tool: InkTool) =>
@@ -66,7 +67,11 @@ export const writingTool = (tool: InkTool) =>
 export function validInkSettings(raw: unknown): InkSettings {
   const fallback = defaultInkSettings();
   if (!raw || typeof raw !== 'object') return fallback;
-  const s = raw as InkSettings;
+  const { smoothing, ...saved } = raw as InkSettings & { smoothing?: boolean };
+  const s = {
+    ...saved,
+    stabilization: saved.stabilization ?? (smoothing === false ? 'off' : 'medium'),
+  };
   if (
     s.version !== 1 ||
     !['hand', 'text', 'pen', 'marker', 'eraser'].includes(s.tool) ||
@@ -82,7 +87,8 @@ export function validInkSettings(raw: unknown): InkSettings {
     s.eraserSize > 100 ||
     !['stroke', 'precision'].includes(s.eraserMode) ||
     !['pen', 'marker', 'both'].includes(s.eraserTarget) ||
-    [s.fingerDrawing, s.smoothing, s.collapsed].some((v) => typeof v !== 'boolean')
+    !['off', 'low', 'medium', 'high'].includes(s.stabilization) ||
+    [s.fingerDrawing, s.collapsed].some((v) => typeof v !== 'boolean')
   )
     return fallback;
   return { ...s };

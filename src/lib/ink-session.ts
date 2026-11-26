@@ -43,7 +43,7 @@ export class InkSession {
   private historyBusy = false;
   private historyPage: number | undefined;
   penActive = false;
-  penFinishedAt = 0;
+  penFinishedAt = -Infinity;
   constructor(
     readonly documentId: string,
     private onError: (error: unknown) => void,
@@ -250,6 +250,12 @@ export class InkSession {
       this.publish();
       this.evict();
     }
+  }
+  async clearPage(page: number) {
+    await this.load(page);
+    const before = this.page(page).state.strokes;
+    this.commit({ documentId: this.documentId, page, before, after: [] });
+    return this.flush();
   }
   async undo() {
     await this.history('undo');

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import type { PageViewport } from 'pdfjs-dist';
+  import { InkFilter } from '../lib/ink-filter';
   import { InkEraser } from '../lib/core';
   import type { InkSession, InkPageState } from '../lib/ink-session';
   import {
@@ -10,7 +10,13 @@
     type InkPoint,
     type Stroke,
   } from '../lib/ink-types';
-  import { inkPoint, centerPath, penOutline, groupStrokes } from '../lib/ink-geometry';
+  import {
+    inkPoint,
+    centerPath,
+    penOutline,
+    groupStrokes,
+    type InkViewport,
+  } from '../lib/ink-geometry';
   import InkStroke from './InkStroke.svelte';
   let {
     session,
@@ -19,13 +25,17 @@
     box,
     settings,
     onError,
+    visibleStrokes,
+    eraserStrokes,
   }: {
     session: InkSession;
     page: number;
-    viewport: PageViewport;
+    viewport: InkViewport;
     box: number[];
     settings: InkSettings;
     onError: (e: unknown) => void;
+    visibleStrokes?: (strokes: Stroke[]) => Stroke[];
+    eraserStrokes?: (strokes: Stroke[], whole: boolean) => Stroke[];
   } = $props();
   let pageData = $state.raw<InkPageState>({ strokes: [], loaded: false, error: null });
   let preview = $state.raw<Stroke[] | null>(null);
@@ -45,26 +55,38 @@
   let eraseBatch: InkPoint[] = [],
     base: Stroke[] = [];
   let replacements: { id: string; segments: InkPoint[][] }[] = [];
+  const liveChunkSize = 192;
+  const liveChunks: SVGPathElement[] = [];
+  let renderedPoints = 0;
+  let previousErase = '';
   let frame = 0,
     startTime = 0,
     rootId = '',
     strokeId = '',
     beganBounds: DOMRect;
-  let capturedViewport: PageViewport, capturedBox: number[];
-  const groups = $derived(groupStrokes(preview ?? pageData.strokes));
+  let capturedViewport: InkViewport, capturedBox: number[];
+  let filter: InkFilter;
+  let touchFragments: Stroke[] = [];
+  const candidates = $derived(visibleStrokes ? visibleStrokes(pageData.strokes) : pageData.strokes);
+  const groups = $derived(groupStrokes(preview ?? candidates));
   const transform = $derived(`matrix(${viewport.transform.join(' ')})`);
   const enabled = $derived(writingTool(settings.tool));
   onMount(() => {
     const off = session.subscribePage(page, (value) => (pageData = value));
-    const finishEvent = () => finish(false);
+    const finishEvent = () => finish(pointerType === 'touch');
+    const cancelTouch = () => {
+      if (pointerType === 'touch') finish(true);
+    };
+    svg.addEventListener('ink-cancel-touch', cancelTouch);
     const visibility = () => {
-      if (document.visibilityState === 'hidden') finish(false);
+      if (document.visibilityState === 'hidden') finishEvent();
     };
     document.addEventListener('ink-finish', finishEvent);
     document.addEventListener('visibilitychange', visibility);
     window.addEventListener('pagehide', finishEvent);
     return () => {
       off();
+      svg.removeEventListener('ink-cancel-touch', cancelTouch);
       document.removeEventListener('ink-finish', finishEvent);
       document.removeEventListener('visibilitychange', visibility);
       window.removeEventListener('pagehide', finishEvent);
@@ -122,21 +144,25 @@
     capturedViewport = viewport;
     capturedBox = [...box];
     beganBounds = svg.getBoundingClientRect();
-    startTime = pageData.strokes.reduce((time, s) => Math.max(time, s.createdAt + 1), Date.now());
+    startTime = Math.max(Date.now(), (pageData.strokes.at(-1)?.createdAt ?? 0) + 1);
     rootId = crypto.randomUUID();
     strokeId = rootId;
     points = [];
+    touchFragments = [];
+    const [a, b, c, d] = viewport.transform;
+    filter = new InkFilter(
+      settings.tool === 'eraser' ? 'off' : settings.stabilization,
+      Math.hypot(a, b) * (box[2] - box[0]),
+      Math.hypot(c, d) * (box[3] - box[1]),
+    );
     if (e.pointerType === 'pen') session.penActive = true;
     try {
       svg.setPointerCapture(e.pointerId);
-      points.push(point(e));
-      if (settings.tool === 'eraser') {
-        base = pageData.strokes;
-        erase = new InkEraser(JSON.stringify(base));
-        eraseBatch = [points[0]];
-        replacements = [];
+      points.push(filter.sample(point(e), e.timeStamp));
+      if (e.pointerType !== 'touch') {
+        startErase();
+        schedule();
       }
-      schedule();
     } catch (error) {
       pointer = null;
       session.penActive = false;
@@ -150,6 +176,16 @@
       onError(error);
     }
   }
+  function startErase() {
+    if (capturedSettings.tool !== 'eraser' || erase) return;
+    base = eraserStrokes
+      ? eraserStrokes(pageData.strokes, capturedSettings.eraserMode === 'stroke')
+      : candidates;
+    erase = new InkEraser(JSON.stringify(base));
+    eraseBatch = [...points];
+    replacements = [];
+    previousErase = '';
+  }
   function move(e: PointerEvent) {
     if (pointer !== e.pointerId) return;
     e.preventDefault();
@@ -160,15 +196,22 @@
     }
     const events = typeof e.getCoalescedEvents === 'function' ? e.getCoalescedEvents() : [];
     for (const sample of events.length ? events : [e]) {
-      let p = point(sample);
+      const p = filter.sample(point(sample), sample.timeStamp);
       const last = points.at(-1)!;
-      if (capturedSettings.smoothing && capturedSettings.tool !== 'eraser')
-        p = { ...p, x: last.x + (p.x - last.x) * 0.65, y: last.y + (p.y - last.y) * 0.65 };
       if (Math.hypot((p.x - last.x) * (box[2] - box[0]), (p.y - last.y) * (box[3] - box[1])) < 0.08)
         continue;
       points.push(p);
-      if (erase) {
-        eraseBatch.push(p);
+      if (capturedSettings.tool === 'eraser') {
+        if (erase) eraseBatch.push(p);
+        else {
+          try {
+            startErase();
+          } catch (error) {
+            onError(error);
+            finish(true);
+            return;
+          }
+        }
         if (points.length > 2) points.shift();
         if (eraseBatch.length >= 4096) paint();
       }
@@ -176,7 +219,7 @@
         finish(false, true);
       }
     }
-    schedule();
+    if (points.length > 1) schedule();
   }
   function schedule() {
     if (!frame) frame = requestAnimationFrame(paint);
@@ -192,28 +235,31 @@
       if (eraseBatch.length) {
         const batch = eraseBatch;
         eraseBatch = [];
-        const result = JSON.parse(
-          erase.erase(
-            JSON.stringify(batch),
-            capturedSettings.eraserSize / 2,
-            capturedSettings.eraserMode,
-            capturedSettings.eraserTarget,
-          ),
-        ) as { replacements: typeof replacements };
-        replacements = result.replacements;
-        const map = new Map(replacements.map((r) => [r.id, r]));
-        preview = base
-          .flatMap((s) => {
-            const r = map.get(s.id);
-            return r
-              ? r.segments.map((segment, i) => ({
-                  ...s,
-                  id: s.id + ':preview:' + i,
-                  points: segment,
-                }))
-              : [s];
-          })
-          .sort(strokeOrder);
+        const result = erase.erase(
+          JSON.stringify(batch),
+          capturedSettings.eraserSize / 2,
+          capturedSettings.eraserMode,
+          capturedSettings.eraserTarget,
+        );
+        if (result !== previousErase) {
+          previousErase = result;
+          replacements = (JSON.parse(result) as { replacements: typeof replacements }).replacements;
+          const changed = new Map(replacements.map((replacement) => [replacement.id, replacement]));
+          preview = changed.size
+            ? base
+                .flatMap((stroke) => {
+                  const replacement = changed.get(stroke.id);
+                  return replacement
+                    ? replacement.segments.map((segment, index) => ({
+                        ...stroke,
+                        id: stroke.id + ':preview:' + index,
+                        points: segment,
+                      }))
+                    : [stroke];
+                })
+                .sort(strokeOrder)
+            : null;
+        }
       }
       const p = points.at(-1)!;
       cursor.setAttribute('cx', String(x + p.x * w));
@@ -231,16 +277,28 @@
     const targetDot = capturedSettings.tool === 'marker' ? markerDot : dot;
     targetDraft.setAttribute('opacity', capturedSettings.tool === 'marker' ? '.28' : '1');
 
-    const pressure =
-      capturedSettings.tool === 'pen' &&
-      points.some((p) => p.pressure !== null && p.pressure !== 0.5);
-    targetPath.setAttribute(
-      'd',
-      pressure ? penOutline(points, w, h, width, x, y) : centerPath(points, w, h, x, y),
-    );
-    targetPath.setAttribute('fill', pressure ? color : 'none');
-    targetPath.setAttribute('stroke', pressure ? 'none' : color);
-    targetPath.setAttribute('stroke-width', String(width));
+    const pressure = capturedSettings.tool === 'pen' && pointerType === 'pen';
+    const draw = (node: SVGPathElement, samples: InkPoint[]) => {
+      node.setAttribute(
+        'd',
+        pressure ? penOutline(samples, w, h, width, x, y) : centerPath(samples, w, h, x, y),
+      );
+      node.setAttribute('fill', pressure ? color : 'none');
+      node.setAttribute('stroke', pressure ? 'none' : color);
+      node.setAttribute('stroke-width', String(width));
+    };
+    // Seal older geometry as the pointer moves. A shared sample joins chunks;
+    // a marker's parent group applies opacity once.
+    while (points.length - renderedPoints > liveChunkSize + 1) {
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('stroke-linecap', 'round');
+      path.setAttribute('stroke-linejoin', 'round');
+      draw(path, points.slice(renderedPoints, renderedPoints + liveChunkSize + 1));
+      renderedPoints += liveChunkSize;
+      targetDraft.insertBefore(path, targetPath);
+      liveChunks.push(path);
+    }
+    draw(targetPath, points.slice(renderedPoints));
     const p = points[0];
     targetDot.setAttribute('cx', String(x + p.x * w));
     targetDot.setAttribute('cy', String(y + p.y * h));
@@ -252,12 +310,12 @@
     if (pointer === null) return;
     cancelAnimationFrame(frame);
     frame = 0;
-    paint();
     const id = pointer;
     const tail = points.at(-1)!;
-    pointer = null;
     try {
       if (!(cancelled && pointerType === 'touch')) {
+        startErase();
+        paint();
         if (erase) {
           const before = base.filter((s) => replacements.some((r) => r.id === s.id));
           const after = before.flatMap((s) =>
@@ -293,20 +351,40 @@
             createdAt: startTime,
             updatedAt: Math.max(Date.now(), startTime),
           };
-          session.commit(
-            { documentId: session.documentId, page, before: [], after: [stroke] },
-            true,
-          );
+          if (pointerType === 'touch') touchFragments.push(stroke);
+          if (pointerType !== 'touch' || !continuing) {
+            session.commit(
+              {
+                documentId: session.documentId,
+                page,
+                before: [],
+                after: pointerType === 'touch' ? touchFragments : [stroke],
+              },
+              true,
+            );
+          }
         }
       }
     } catch (e) {
       onError(e);
     } finally {
+      pointer = null;
       erase?.free();
       erase = undefined;
       preview = null;
       points = [];
       replacements = [];
+      const keepTouchDraft = continuing && pointerType === 'touch' && !session.failed;
+      if (keepTouchDraft) {
+        const target = capturedSettings.tool === 'marker' ? markerPath : path;
+        const tail = target.cloneNode() as SVGPathElement;
+        target.before(tail);
+        liveChunks.push(tail);
+      } else {
+        for (const node of liveChunks) node.remove();
+        liveChunks.length = 0;
+      }
+      renderedPoints = 0;
       path?.setAttribute('d', '');
       markerPath?.setAttribute('d', '');
       if (markerDot) markerDot.style.display = 'none';
@@ -318,6 +396,7 @@
         strokeId = crypto.randomUUID();
         return;
       }
+      touchFragments = [];
       if (pointerType === 'pen') {
         session.penActive = false;
         session.penFinishedAt = performance.now();
@@ -364,7 +443,7 @@
   onpointerup={(e) => {
     if (pointer === e.pointerId) {
       e.stopPropagation();
-      const end = point(e),
+      const end = filter.sample(point(e), e.timeStamp, true),
         last = points.at(-1)!;
       if (Math.hypot(end.x - last.x, end.y - last.y) > 1e-6) {
         points.push(end);
@@ -383,7 +462,6 @@
   <g {transform}>
     {#each groups.filter((g) => g.kind === 'pen') as group (group.rootId)}<g
         opacity={group.opacity}
-        style:mix-blend-mode={group.kind === 'marker' ? 'multiply' : 'normal'}
         data-ink-kind={group.kind}
         >{#each group.strokes as stroke (stroke.id)}<InkStroke {stroke} {box} />{/each}</g
       >{/each}

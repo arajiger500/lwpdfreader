@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import Library from './components/Library.svelte';
-  import Reader from './components/Reader.svelte';
   import Icon from './components/Icon.svelte';
   import { initCore } from './lib/core';
   import {
@@ -30,6 +29,11 @@
     offlineReady = $state(false);
   let removeTarget = $state<DocumentMeta | null>(null);
   let updateSW: (reload?: boolean) => Promise<void>;
+  let Reader = $state<typeof import('./components/Reader.svelte').default>();
+  async function prepareReader() {
+    const [module] = await Promise.all([import('./components/Reader.svelte'), initCore()]);
+    Reader = module.default;
+  }
   const showError = (e: unknown) => (error = errorMessage(e));
   async function refresh() {
     documents = await listDocuments();
@@ -68,7 +72,7 @@
     busy = true;
     status = 'Opening ' + doc.name + '…';
     try {
-      const file = await getFile(doc.id);
+      const [file] = await Promise.all([getFile(doc.id), prepareReader()]);
       if (!file)
         throw new Error('The original PDF is missing. Import it again to reconnect your notes.');
       const loaded = await loadPdf(file);
@@ -82,13 +86,19 @@
     }
   }
   async function back() {
-    active = null;
-    const old = pdf;
-    pdf = null;
-    await tick();
-    if (old) await old.loadingTask.destroy();
-    await setSetting('lastDocument', null);
-    await refresh();
+    busy = true;
+    status = 'Closing document…';
+    try {
+      active = null;
+      const old = pdf;
+      pdf = null;
+      await tick();
+      if (old) await old.loadingTask.destroy();
+      await setSetting('lastDocument', null);
+      await refresh();
+    } finally {
+      busy = false;
+    }
   }
   async function add(file: File) {
     if (busy) return;
@@ -98,6 +108,7 @@
     try {
       if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf')
         throw new Error('Choose a PDF document.');
+      await prepareReader();
       loaded = await loadPdf(file);
       const id = await fingerprint(
         file,
@@ -141,6 +152,7 @@
   }
   async function backup() {
     try {
+      await initCore();
       downloadBackup(await exportBackup(), 'LWPDFReader-library');
     } catch (e) {
       showError(e);
@@ -154,6 +166,7 @@
         throw new Error(
           'Backup is larger than the 50 MB safety limit. Import document backups separately.',
         );
+      await initCore();
       const count = await importBackup(JSON.parse(await file.text()));
       await refresh();
       notice = `Restored ${count} annotations. If a PDF is missing, import its original file to reconnect it.`;
@@ -192,7 +205,6 @@
   onMount(() => {
     void (async () => {
       try {
-        await initCore();
         theme =
           (await getSetting<string>('theme')) ??
           (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
@@ -223,7 +235,7 @@
   });
 </script>
 
-{#if active && pdf}{#key active.id}<Reader
+{#if active && pdf && Reader}{#key active.id}<Reader
       doc={active}
       {pdf}
       onBack={back}
@@ -282,8 +294,9 @@
     >
       <h2 id="delete-title">Remove this document?</h2>
       <p>
-        “{removeTarget.name}” and its annotations will be removed from this device. Export a backup
-        first if you need to keep your notes.
+        “{removeTarget.name}” and its annotations and whiteboard links will be removed from this
+        device. Linked whiteboards remain available. Export a backup first if you need to keep your
+        notes.
       </p>
       <div>
         <button class="secondary-button" onclick={() => (removeTarget = null)}>Keep document</button

@@ -1,10 +1,14 @@
 import type { PageViewport } from 'pdfjs-dist';
+export type InkViewport = Pick<
+  PageViewport,
+  'convertToPdfPoint' | 'height' | 'width' | 'transform'
+>;
 import type { InkPoint, Stroke } from './ink-types';
 export function inkPoint(
   clientX: number,
   clientY: number,
   bounds: DOMRect,
-  viewport: PageViewport,
+  viewport: InkViewport,
   box: number[],
   pressure: number | null,
 ): InkPoint {

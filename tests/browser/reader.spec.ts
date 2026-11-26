@@ -1,8 +1,9 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page } from './browser-fixtures';
 import { readFile, writeFile } from 'node:fs/promises';
 async function importPdf(page: Page, file = 'study.pdf') {
   await page.goto('/');
-  await page.getByLabel('Import PDF file', { exact: true }).setInputFiles('tests/fixtures/' + file);
+  const input = page.getByLabel('Import PDF file', { exact: true });
+  await input.setInputFiles('tests/fixtures/' + file);
   await expect(page.locator('.pdf-page[data-page="1"][data-rendered="true"]')).toBeVisible({
     timeout: 120000,
   });
@@ -218,7 +219,11 @@ test('mixed dimensions, multiline highlights, rotation, region and session setti
         e.getBoundingClientRect(),
       );
       return spans.map((s) => {
-        const r = s.getBoundingClientRect();
+        // PDF.js renders a text span with a font-dependent wrapper. Compare
+        // actual selection bounds, which are the geometry saved by the app.
+        const range = document.createRange();
+        range.selectNodeContents(s);
+        const r = range.getBoundingClientRect();
         return Math.min(
           ...rects.map(
             (h) =>

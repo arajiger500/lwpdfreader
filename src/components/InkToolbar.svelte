@@ -9,6 +9,7 @@
     onUndo,
     onRedo,
     onRetry,
+    whiteboard = false,
   }: {
     settings: InkSettings;
     status: InkStatus;
@@ -16,6 +17,7 @@
     onUndo: () => void;
     onRedo: () => void;
     onRetry: () => void;
+    whiteboard?: boolean;
   } = $props();
   let options = $state(false);
   const tools: { id: InkTool; name: string; icon: string }[] = [
@@ -113,13 +115,20 @@
                 )}
             /></label
           >
-          <label class="ink-check"
-            ><input
-              type="checkbox"
-              checked={settings.smoothing}
-              onchange={(e) => patch({ smoothing: e.currentTarget.checked })}
-            /> Smooth input</label
-          >
+          <label>
+            Stabilization
+            <select
+              aria-label="Stabilization"
+              value={settings.stabilization}
+              onchange={(e) =>
+                patch({ stabilization: e.currentTarget.value as InkSettings['stabilization'] })}
+            >
+              <option value="off">Off</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </label>
         {/if}
         <label class="ink-check"
           ><input
@@ -130,12 +139,12 @@
         >
         <p>
           {settings.fingerDrawing
-            ? 'Finger input draws; use Hand to scroll.'
-            : 'Pencil draws; fingers pan. Use Hand for native pinch zoom.'}
+            ? 'Draw with one finger. Use two fingers to pan or zoom.'
+            : 'Pencil draws. Use fingers to pan or zoom.'}
         </p>
       </section>{/if}
     <div class="ink-toolbar" role="toolbar" aria-label="Annotation tools" tabindex="-1">
-      {#each tools as tool}<button
+      {#each tools.filter((tool) => !whiteboard || tool.id !== 'text') as tool}<button
           class:active={settings.tool === tool.id}
           aria-label={tool.name}
           aria-pressed={settings.tool === tool.id}

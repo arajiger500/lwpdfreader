@@ -93,11 +93,13 @@ describe('transactional local library', () => {
     migrateDatabase(db, 2);
     expect([...db.objectStoreNames]).toEqual([
       'annotations',
+      'boardAnchors',
       'documents',
       'files',
       'ink',
       'inkDeleted',
       'settings',
+      'whiteboards',
     ]);
   });
   it('never moves an existing annotation to another document', async () => {

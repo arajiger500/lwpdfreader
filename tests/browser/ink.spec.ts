@@ -1,9 +1,10 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page } from './browser-fixtures';
 import { readFile, writeFile } from 'node:fs/promises';
 import sharp from 'sharp';
 async function open(page: Page, file = process.env.LWPDF_INK_FIXTURE ?? 'study.pdf') {
   await page.goto('/');
-  await page.getByLabel('Import PDF file', { exact: true }).setInputFiles('tests/fixtures/' + file);
+  const input = page.getByLabel('Import PDF file', { exact: true });
+  await input.setInputFiles('tests/fixtures/' + file);
   await expect(page.locator('.pdf-page[data-page="1"][data-rendered="true"]')).toBeVisible({
     timeout: 120000,
   });
@@ -479,7 +480,7 @@ test('pen colors, widths and finger preferences are restored on reload', async (
     e.dispatchEvent(new Event('input', { bubbles: true }));
   });
   await page.getByLabel('Draw with a finger').check();
-  await page.getByLabel('Smooth input').uncheck();
+  await page.getByLabel('Stabilization').selectOption('off');
   await page.getByLabel('Tool options').click();
   await draw(page, [
     [0.2, 0.65],
@@ -491,7 +492,7 @@ test('pen colors, widths and finger preferences are restored on reload', async (
   await page.reload();
   await page.getByLabel('Tool options').click();
   await expect(page.getByLabel('Draw with a finger')).toBeChecked();
-  await expect(page.getByLabel('Smooth input')).not.toBeChecked();
+  await expect(page.getByLabel('Stabilization')).toHaveValue('off');
   await expect(page.getByLabel('Stroke width', { exact: true })).toHaveValue('7');
 });
 

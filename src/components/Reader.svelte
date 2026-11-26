@@ -6,6 +6,15 @@
   import { getOutline, type OutlineEntry, type PDFDocumentProxy } from '../lib/pdf';
   import { exportBackup, downloadBackup } from '../lib/backup';
   import { ProgressWriter } from '../lib/progress';
+  import AttachWhiteboard from './AttachWhiteboard.svelte';
+  import {
+    attachBoard,
+    documentAnchors,
+    type AnchorPosition,
+    type BoardAnchor,
+    type Whiteboard as Board,
+  } from '../lib/whiteboard-storage';
+  import { database } from '../lib/storage';
   import Viewer from './Viewer.svelte';
   import Sidebar from './Sidebar.svelte';
   import Icon from './Icon.svelte';
@@ -31,19 +40,83 @@
   const inkSession = untrack(() => new InkSession(doc.id, onError));
   const inkStatus = inkSession.status;
   let inkSettings = $state<InkSettings>(defaultInkSettings());
-  let settingsTimer: ReturnType<typeof setTimeout>;
+  let settingsTimer: ReturnType<typeof setTimeout> | undefined;
+  let pendingSettings: InkSettings | undefined;
+  let settingsRevision = 0;
+  function flushSettings() {
+    clearTimeout(settingsTimer);
+    settingsTimer = undefined;
+    const snapshot = pendingSettings;
+    const revision = settingsRevision;
+    pendingSettings = undefined;
+    if (snapshot) {
+      void setSetting('ink-settings', snapshot).catch((error) => {
+        if (revision === settingsRevision) pendingSettings ??= snapshot;
+        onError(error);
+      });
+    }
+  }
   let settingsTouched = false;
   function changeInk(settings: InkSettings) {
     document.dispatchEvent(new Event('ink-finish'));
     settingsTouched = true;
     region = false;
+    attaching = false;
     selection = null;
     window.getSelection()?.removeAllRanges();
     inkSettings = settings;
     clearTimeout(settingsTimer);
-    settingsTimer = setTimeout(() => void setSetting('ink-settings', settings).catch(onError), 200);
+    pendingSettings = settings;
+    settingsRevision++;
+    settingsTimer = setTimeout(flushSettings, 200);
   }
   let viewer: Viewer;
+  let attaching = $state(false);
+  let anchorPosition = $state<AnchorPosition>();
+  let anchors = $state.raw<Awaited<ReturnType<typeof documentAnchors>>>([]);
+  let opened = $state.raw<{ board: Board; anchor: BoardAnchor }>();
+  let BoardView = $state<typeof import('./Whiteboard.svelte').default>();
+  let boardOpening = false;
+  async function refreshAnchors() {
+    try {
+      anchors = await documentAnchors(doc.id);
+    } catch (error) {
+      onError(error);
+    }
+  }
+  async function showBoard(board: Board, anchor: BoardAnchor) {
+    BoardView ??= (await import('./Whiteboard.svelte')).default;
+    opened = { board, anchor };
+  }
+  async function attach(choice: { title: string } | { boardId: string }) {
+    if (!anchorPosition) return;
+    // Load the editor before committing so a failed chunk load cannot duplicate the link on retry.
+    BoardView ??= (await import('./Whiteboard.svelte')).default;
+    const { board, anchor } = await attachBoard(doc.id, anchorPosition, choice);
+    anchorPosition = undefined;
+    attaching = false;
+    message = '';
+    await refreshAnchors();
+    await showBoard(board, anchor);
+  }
+  async function openBoard(anchor: BoardAnchor) {
+    if (boardOpening) return;
+    boardOpening = true;
+    try {
+      document.dispatchEvent(new Event('ink-finish'));
+      if (!(await inkSession.flush())) return;
+      const board = await (await database()).get('whiteboards', anchor.boardId);
+      if (!board || board.deleted) {
+        await refreshAnchors();
+        return;
+      }
+      await showBoard(board, anchor);
+    } catch (error) {
+      onError(error);
+    } finally {
+      boardOpening = false;
+    }
+  }
   let sidebarView = $state.raw<Sidebar | undefined>(undefined);
   let viewerReady = $state(false);
   let pageEditing = $state(false);
@@ -66,7 +139,7 @@
     async (p) => {
       await saveProgress(doc.id, p);
       if (
-        ['page', 'offset', 'zoom', 'fit', 'mode', 'rotation'].every(
+        ['page', 'offset', 'horizontal', 'zoom', 'fit', 'mode', 'rotation'].every(
           (key) => p[key as keyof Progress] === progress[key as keyof Progress],
         )
       )
@@ -81,6 +154,17 @@
     annotations.some((a) => a.kind === 'bookmark' && a.page === progress.page),
   );
   function report(p: Progress, immediate = false) {
+    if (
+      !immediate &&
+      p.page === progress.page &&
+      p.offset === progress.offset &&
+      p.horizontal === progress.horizontal &&
+      p.zoom === progress.zoom &&
+      p.fit === progress.fit &&
+      p.mode === progress.mode &&
+      p.rotation === progress.rotation
+    )
+      return;
     progress = p;
     if (!pageEditing) pageInput = String(p.page);
     saveState = 'Saving position…';
@@ -214,8 +298,25 @@
     document.dispatchEvent(new Event('ink-finish'));
     if (await inkSession.flush()) await inkSession.redo();
   }
+  let outlineRequested = false;
+  $effect(() => {
+    if (!sidebar || outlineRequested) return;
+    outlineRequested = true;
+    void getOutline(pdf)
+      .then((items) => {
+        outline = items;
+      })
+      .catch(() => tell('Could not read this PDF’s contents.'))
+      .finally(() => {
+        outlineLoading = false;
+      });
+  });
   function visibility(e: Event) {
-    if (e.type === 'pagehide' || document.visibilityState === 'hidden') void writer.flush();
+    if (e.type === 'pagehide' || document.visibilityState === 'hidden') {
+      void writer.flush();
+      flushSettings();
+      void inkSession.flush();
+    }
   }
   onMount(() => {
     let active = true;
@@ -224,7 +325,9 @@
         if (active && !settingsTouched) inkSettings = validInkSettings(s);
       })
       .catch(onError);
+    void refreshAnchors();
     const historyKey = (e: KeyboardEvent) => {
+      if (opened || anchorPosition) return;
       if (
         (e.metaKey || e.ctrlKey) &&
         e.key.toLowerCase() === 'z' &&
@@ -240,26 +343,13 @@
         if (active) annotations = a;
       })
       .catch(onError);
-    // Outline resolution is lazy so a large outline cannot delay the first page.
-    const outlineTimer = setTimeout(() => {
-      void getOutline(pdf)
-        .then((o) => {
-          if (active) outline = o;
-        })
-        .catch(() => tell('Could not read this PDF’s contents.'))
-        .finally(() => {
-          outlineLoading = false;
-        });
-    }, 500);
     document.addEventListener('visibilitychange', visibility);
     window.addEventListener('pagehide', visibility);
     return () => {
       active = false;
       window.removeEventListener('keydown', historyKey);
-      clearTimeout(settingsTimer);
-      if (settingsTouched) void setSetting('ink-settings', { ...inkSettings }).catch(onError);
+      flushSettings();
       void inkSession.flush();
-      clearTimeout(outlineTimer);
       clearTimeout(messageTimer);
       void writer.flush();
       document.removeEventListener('visibilitychange', visibility);
@@ -367,6 +457,19 @@
         aria-label="Region highlight"
         aria-pressed={region}><Icon name="region" size={18} /><span>Region</span></button
       ><button
+        class="tool-button"
+        aria-label="Attach whiteboard"
+        aria-pressed={attaching}
+        disabled={!viewerReady}
+        onclick={() => {
+          document.dispatchEvent(new Event('ink-finish'));
+          region = false;
+          selection = null;
+          window.getSelection()?.removeAllRanges();
+          attaching = !attaching;
+          if (attaching) tell('Tap a point on the PDF to attach a whiteboard.');
+        }}><Icon name="whiteboard" size={18} /><span>Whiteboard</span></button
+      ><button
         class="icon-button optional-tool"
         aria-label="Rotate clockwise"
         onclick={() => setting({ rotation: (progress.rotation + 90) % 360 })}
@@ -391,6 +494,11 @@
       {inkSettings}
       initial={doc.progress}
       {annotations}
+      {anchors}
+      {attaching}
+      suspended={!!opened || !!anchorPosition}
+      onAttach={(position) => (anchorPosition = position)}
+      onOpenBoard={(anchor) => void openBoard(anchor)}
       regionMode={region}
       {focus}
       onProgress={report}
@@ -455,3 +563,20 @@
     </div>{/if}
   {#if message}<div class="toast" role="status">{message}</div>{/if}
 </div>
+
+{#if anchorPosition}
+  <AttachWhiteboard onAttach={attach} onClose={() => (anchorPosition = undefined)} {onError} />
+{/if}
+{#if opened && BoardView}
+  <BoardView
+    initial={opened.board}
+    anchor={opened.anchor}
+    preferences={inkSettings}
+    onChange={changeInk}
+    {onError}
+    onClose={() => {
+      opened = undefined;
+      void refreshAnchors();
+    }}
+  />
+{/if}

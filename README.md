@@ -23,7 +23,7 @@ Offline caching runs in production builds, not the development server. Use HTTPS
 ## Use
 
 - **Import PDF** opens the device file picker. A content SHA-256 ID prevents duplicate library entries and reconnects backups to reimported originals, even after renaming a file.
-- Previous/next, page input, arrow keys and Page Up/Down navigate. Choose continuous or single-page mode, fit width/page, or a custom zoom. Browser-native pinch zoom is available on iPad; toolbar zoom changes the PDF layout. Rotate on wider screens. Focus mode hides the toolbars.
+- Previous/next, page input, arrow keys and Page Up/Down navigate. Choose continuous or single-page mode, fit width/page, or a custom zoom. Two fingers pan and zoom the PDF in any tool. Toolbar zoom and fit controls remain available. Rotate on wider screens. Focus mode hides the toolbars.
 - Select text on **one page**, then choose a highlight color in the bottom toolbar. Multi-line selection is supported. For scanned pages, choose **Region**, drag an area, then return to normal scrolling. No OCR is performed.
 - Tap an existing highlight, or find it in the sidebar, to recolor, delete or add a note. Notes save 450 ms after typing, on blur and on backgrounding. Failed note saves keep the editor open when leaving, so the draft can be retried. Saved annotation actions commit immediately to IndexedDB. Use the bookmark button to keep a page.
 - Library **Export backup** saves all annotation metadata and reading positions; the sidebar exports the current document. **Restore backup** validates the complete file before one atomic merge. The most recently updated copy of an annotation wins.
@@ -32,9 +32,13 @@ Offline caching runs in production builds, not the development server. Use HTTPS
 
 ## Pen, marker and eraser
 
-The docked annotation toolbar now includes Hand, Text highlight, Pen, Freehand highlighter, Eraser, width/color options and Undo/Redo. Pencil-style pointer input supports pressure and coalesced events when available. Fingers pan by default; finger drawing is optional. Use Hand for native pinch zoom. Marker opacity is applied once per original stroke; precision erasing splits persistent vectors, while whole-stroke erasing removes the original stroke's remaining fragments. Collapse or Focus switches to reading mode.
+The docked annotation toolbar now includes Hand, Text highlight, Pen, Freehand highlighter, Eraser, width/color options and Undo/Redo. Pencil-style pointer input supports pressure and coalesced events when available. Fingers pan by default; finger drawing is optional. Use one finger to draw when enabled, and two fingers to pan or zoom without changing tools. Tool options include four stabilization levels. Marker opacity is applied once per original stroke; precision erasing splits persistent vectors, while whole-stroke erasing removes the original stroke's remaining fragments. Collapse or Focus switches to reading mode.
 
-Saved ink, including undo/redo results, survives reloads and is included in v2 JSON backups. Existing v1 backups still import and existing study data migrates in place. Undo history lasts for the open session. Failed writes retain unsaved vectors with a Retry ink action. Browser palm rejection and Apple Pencil double-tap/native API parity are not guaranteed. See [tool behavior, architecture and real-iPad checklist](docs/PENCIL.md).
+Saved ink, including undo/redo results, survives reloads and is included in JSON backups. Existing v1 and v2 backups still import and existing study data migrates in place. Undo history lasts for the open session. Failed writes retain unsaved vectors with a Retry ink action. Browser palm rejection and Apple Pencil double-tap/native API parity are not guaranteed. See [tool behavior, architecture and real-iPad checklist](docs/PENCIL.md).
+
+## Linked whiteboards
+
+Choose **Whiteboard** and tap a PDF location. Create a board or link one you already have. Tap its marker to sketch in a separate workspace with the same ink and eraser tools. Set a title and a blank, grid, or dotted background. **Back to PDF** returns to the same reading position. Unlink one marker or delete the board and every marker that points to it. Whiteboards work offline and are included in v3 backups. [Workflow and migration details](docs/STUDY-WORKSPACE.md)
 
 ## Data and privacy
 
@@ -83,7 +87,7 @@ Import this GitHub repository, choose Vite, set Node 24, install with `npm ci`, 
 
 ## First-release limits
 
-Real iPad hardware, Safari touch selection handles, Pencil gestures, app termination and iPadOS storage eviction require the [manual acceptance procedure](docs/TESTING.md). Linux Chromium results are not iPad performance claims. Browser-native pinch magnifies the whole view; toolbar zoom refits the document. No OCR, full-document search, password-protected PDFs, editable PDF forms, or PDF export with embedded annotations. Existing PDF annotations render as part of PDF.js output but are not editable here. Text-annotation backup merging is additive and can restore deleted text records. Ink backups include deletion records to keep erased strokes erased. Text selection is restricted to one page with explicit feedback.
+Real iPad hardware, Safari touch selection handles, Pencil gestures, app termination and iPadOS storage eviction require the [manual acceptance procedure](docs/TESTING.md). Linux Chromium results are not iPad performance claims. No OCR, full-document search, password-protected PDFs, editable PDF forms, or PDF export with embedded annotations. Existing PDF annotations render as part of PDF.js output but are not editable here. Text-annotation backup merging is additive and can restore deleted text records. Ink backups include deletion records to keep erased strokes erased. Text selection is restricted to one page with explicit feedback.
 
 Large real textbooks can be much more expensive than the synthetic benchmark. Canvas allocation is bounded; PDF.js still retains document parsing data and visited range bytes. Extreme diagrams, unusual embedded fonts and damaged files can remain costly. See performance notes before making hardware claims.
 
@@ -96,3 +100,5 @@ MIT for application and Rust source. PDF.js is Apache-2.0; its extracted text-la
 ![Vector pen and marker tools](docs/screenshots/ink-tools.png)
 
 ![Reader with persistent highlight and note](docs/screenshots/reader.png)
+
+![Whiteboard with an energy transfer sketch](docs/screenshots/whiteboard.png)

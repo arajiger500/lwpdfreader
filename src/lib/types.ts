@@ -1,4 +1,5 @@
 import type { Stroke, InkDeleted } from './ink-types';
+import type { Whiteboard, BoardAnchor } from './whiteboard-storage';
 export type Color = 'yellow' | 'green' | 'blue' | 'pink';
 export interface Rect {
   x: number;
@@ -22,6 +23,7 @@ export interface Annotation {
 export interface Progress {
   page: number;
   offset: number;
+  horizontal?: number;
   zoom: number;
   fit: 'width' | 'page' | 'custom';
   mode: 'continuous' | 'single';
@@ -39,7 +41,9 @@ export interface DocumentMeta {
 }
 export interface Backup {
   format: 'LWPDFReader';
-  version: 2;
+  version: 2 | 3;
+  whiteboards?: Whiteboard[];
+  boardAnchors?: BoardAnchor[];
   strokes: Stroke[];
   inkDeleted: InkDeleted[];
   exportedAt: number;

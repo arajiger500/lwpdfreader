@@ -1,6 +1,6 @@
 # Verification and acceptance
 
-Automated testing is against Linux Chromium, real generated PDFs, production assets, WASM and IndexedDB. It does not establish real iPad Safari compatibility or performance.
+Automated testing uses Linux Chromium and selected Linux Playwright WebKit flows, generated PDFs, production assets, WASM and IndexedDB. Physical-device acceptance covers iPadOS Safari and the installed PWA.
 
 ## Automated checks
 
@@ -18,16 +18,16 @@ Automated testing is against Linux Chromium, real generated PDFs, production ass
 2. Import an original, lawful 300–800 MB textbook from Files. Confirm filename, page count and library entry. Import the identical file renamed; confirm one entry with notes/progress retained. Try corrupt and password-protected files and verify clear errors.
 3. Read for 20–30 minutes in portrait and landscape. Scroll quickly, jump among 1, 700, 1490 and distant chapters, use outline/bookmarks, and switch reading modes. Watch for white pages, stale tasks, drift and canvas accumulation. Profile Safari Web Inspector if a Mac is available; the app itself does not require one.
 4. Long-press a word and extend the native selection across several lines and spans. Pick each color. Verify that native selection handles do not make the bottom highlight toolbar inaccessible. Create adjacent/overlapping highlights. Tap and edit notes. Recolor/delete through the sidebar. Ensure overlays never block selection or touch scrolling. Try Pencil text interaction separately.
-5. Use toolbar zoom, native pinch, fit page and fit width. Rotate the view and use mixed-size pages. Check each highlight against its text. Region-mark an image-only page and confirm scrolling resumes when Region is off. Cross-page text selection must show the single-page restriction.
+5. Use toolbar zoom, two-finger document-local gestures, fit page and fit width. Rotate the view and use mixed-size pages. Check each highlight against its text. Region-mark an image-only page and confirm scrolling resumes when Region is off. Cross-page text selection must show the single-page restriction.
 6. Stop partway down a page; wait for the saved status. Reload, return to library/reopen, switch documents, background the app, lock/unlock, and reopen after force quitting. Confirm page, relative offset, mode/zoom and committed annotations. Repeat immediately after typing to characterize the final debounce interval.
-7. Export a document and full-library backup to Files. Restore into a clean browser profile/origin; reimport original PDFs. Verify all geometry, selected text, notes, bookmarks and progress. Try malformed JSON, unknown versions, invalid geometry and identity conflicts; ensure no partial writes. Confirm older backups can reintroduce deleted records, as documented.
+7. Export a document and full-library backup to Files. Restore into a clean browser profile/origin; reimport original PDFs. Verify all geometry, selected text, notes, bookmarks and progress. Try malformed JSON, unknown versions, invalid geometry and identity conflicts; ensure no partial writes. Confirm older backups preserve whiteboard, link and ink deletions. Legacy text annotations use additive merging.
 8. Enable Airplane Mode, disable Wi-Fi, force close and launch the Home Screen app. Open an imported PDF, navigate to uncached pages, highlight, note, bookmark, and reload. Keep the device offline during this whole exercise.
 9. Exercise limited quota with a disposable test profile. Check that a failed save is visible and unsaved note text stays available for retry. Do not fill the user’s real device as an automated experiment. Check Settings → Safari storage cleanup: expect data loss and recover from originals + backup.
 10. Deploy a new build while an old reader is open. Verify it waits for an explicit library update and local documents/annotations survive. Test VoiceOver, keyboard navigation, 44 px touch hit areas, dark theme and safe-area insets.
 
 ## Expected limits
 
-No OCR, password entry, full-document search, cross-page text highlight, embedded-annotation PDF export, fuzzy reanchoring or collaborative/multiple-tab editing. Native pinch zoom magnifies the application viewport; toolbar zoom is the layout zoom. Forms, external links and the original PDF’s annotations do not have a separate interactive annotation layer. Safari storage retention and force-kill behavior cannot be guaranteed.
+No OCR, password entry, full-document search, cross-page text highlight, embedded-annotation PDF export, fuzzy reanchoring or collaborative/multiple-tab editing. Forms, external links and the original PDF’s annotations do not have a separate interactive annotation layer. Safari storage retention and force-kill behavior cannot be guaranteed.
 
 ## Extended performance fixtures
 
@@ -37,7 +37,7 @@ LWPDF_BENCHMARK_FILE=heavy.pdf npm run test:browser -- --grep 'large PDF benchma
 npm run benchmark:core
 ```
 
-The heavy fixture has 1,500 pages and 64 unique, deterministic 2048×2048 noise JPEGs reused across pages (~163 MiB). It is intentionally not committed. The browser benchmark samples 40 jumps, initial import, local reopen, zoom, live canvases, main JS heap and Linux aggregate Chromium process RSS (including shared mappings and browser overhead). Preserve `test-results/performance-heavy.json` before a new full test run clears that folder. Linux WebKit installation was attempted, but the Cloud environment lacks its required system libraries and the package helper; no WebKit/Safari pass is claimed.
+The heavy fixture has 1,500 pages and 64 unique, deterministic 2048×2048 noise JPEGs reused across pages (~163 MiB). It is intentionally not committed. The browser benchmark samples 40 jumps, initial import, local reopen, zoom, live canvases, main JS heap and Linux aggregate Chromium process RSS (including shared mappings and browser overhead). Preserve `test-results/performance-heavy.json` before a new full test run clears that folder.
 
 ## Original reader verification (before vector ink)
 
@@ -59,3 +59,14 @@ LWPDF_INK_FIXTURE=heavy.pdf npm run test:browser -- --grep 'pen, translucent' --
 Cross-host CI verification also checks WASM artifact drift. The WASM build normalizes checkout/Cargo source paths and disables incremental compilation so host-specific panic locations do not change the committed binary. The build removes only the optional `producers` custom section: the prebuilt bindgen CLI includes a commit hash absent from the cargo-installed CLI. Downloaded CI and local artifacts were verified byte-identical after normalization. Rotation geometry tests read both rectangles atomically to avoid sampling different layout frames during sidebar resizing.
 
 The normalized WASM build was also verified from a different checkout path and a different Cargo home on Linux. After producer-metadata normalization, the binary SHA-256 is `6757ce1a526bef39c95dc742429acdea4219f80a4de31d126c46958462726c00`; the emitted binary contained canonical `/cargo` paths rather than a builder's home directory.
+
+## Study workspace regression tests
+
+```sh
+npm run test:browser -- study.spec.ts
+npx playwright install --with-deps webkit
+LWPDF_BROWSER=webkit npm run test:browser -- --grep 'whiteboard editing|marker self-overlap|mixed dimensions'
+LWPDF_SCREENSHOTS=1 npm run test:browser -- study.spec.ts --grep 'capture workspace'
+```
+
+The gesture suite uses Chromium CDP to deliver real browser touch event sequences and cover all toolbar modes, simultaneous translation/scaling, pointer cancellation, capture loss, and a dense board. The cross-browser workflows exercise pointer drawing, rotation, linked board persistence and shared-annotation rendering. [iPad-specific checks](STUDY-WORKSPACE.md)
