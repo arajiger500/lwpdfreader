@@ -19,6 +19,8 @@ test('opt-in efficiency proxies for reader lifecycle, gestures and ink', async (
   test.skip(!process.env.LWPDF_EFFICIENCY || browserName !== 'chromium');
   test.setTimeout(150000);
   const fixture = process.env.LWPDF_BENCHMARK_FILE ?? 'large.pdf';
+  const files = await readdir('dist/assets');
+  const startupAsset = files.find((name) => /^index-.*\.js$/.test(name));
   await page.addInitScript(() => {
     const measurements: Samples = {
       frames: [],
@@ -72,7 +74,12 @@ test('opt-in efficiency proxies for reader lifecycle, gestures and ink', async (
   await page.goto('/');
   await expect(page.getByLabel('Import PDF file')).toBeAttached();
   const startupMs = performance.now() - start;
+  await expect(page.locator('script[type="module"]')).toHaveAttribute(
+    'src',
+    '/assets/' + startupAsset,
+  );
   const ready = page.locator('.pdf-page[data-page="1"][data-rendered="true"]');
+  await expect(page.getByLabel('Import PDF file')).toBeEnabled();
   const importing = performance.now();
   await page.getByLabel('Import PDF file').setInputFiles('tests/fixtures/' + fixture);
   await expect(ready).toBeVisible({ timeout: 30000 });
@@ -258,9 +265,9 @@ test('opt-in efficiency proxies for reader lifecycle, gestures and ink', async (
   await expect(ready).toBeVisible();
   const widthAfter = (await ready.boundingBox())?.width;
   const zoomAfter = await metrics();
-  const settledMs = widthBefore !== widthAfter ? performance.now() - release : null;
+  const changedScale = widthBefore && widthAfter && Math.abs(widthAfter / widthBefore - 1) > 0.02;
+  const settledMs = changedScale ? performance.now() - release : null;
 
-  const files = await readdir('dist/assets');
   const bundle = await Promise.all(
     files.map(async (file) => {
       const bytes = await readFile('dist/assets/' + file);
@@ -325,6 +332,7 @@ test('opt-in sustained reading and handwriting on an illustrated textbook', asyn
   test.setTimeout(duration + 90000);
   const fixture = process.env.LWPDF_BENCHMARK_FILE ?? 'heavy.pdf';
   await page.goto('/');
+  await expect(page.getByLabel('Import PDF file')).toBeEnabled();
   await page.getByLabel('Import PDF file').setInputFiles('tests/fixtures/' + fixture);
   const ready = page.locator('.pdf-page[data-page="1"][data-rendered="true"]');
   await expect(ready).toBeVisible({ timeout: 45000 });

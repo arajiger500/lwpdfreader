@@ -1,0 +1,293 @@
+{
+  "date": "2026-11-26T06:04:42.639Z",
+  "browser": "Chromium on Linux; original synthetic PDF, not real iPad hardware",
+  "pages": 1500,
+  "fixture": "illustrated.pdf",
+  "fixtureBytes": 341972160,
+  "firstPageMs": 6431,
+  "reopenMs": 932,
+  "zoomMs": 300,
+  "closedBrowserRssBytes": 1246035968,
+  "samples": [
+    {
+      "page": 1000,
+      "navigationMs": 384,
+      "canvases": 3,
+      "browserRssBytes": 1127149568,
+      "heap": 8999241
+    },
+    {
+      "page": 25,
+      "navigationMs": 387,
+      "canvases": 3,
+      "browserRssBytes": 1333592064,
+      "heap": 9558077
+    },
+    {
+      "page": 1490,
+      "navigationMs": 288,
+      "canvases": 3,
+      "browserRssBytes": 1377439744,
+      "heap": 9898163
+    },
+    {
+      "page": 700,
+      "navigationMs": 270,
+      "canvases": 3,
+      "browserRssBytes": 1450110976,
+      "heap": 9917392
+    },
+    {
+      "page": 1,
+      "navigationMs": 186,
+      "canvases": 2,
+      "browserRssBytes": 1406771200,
+      "heap": 9763968
+    },
+    {
+      "page": 1200,
+      "navigationMs": 419,
+      "canvases": 3,
+      "browserRssBytes": 1490255872,
+      "heap": 9793419
+    },
+    {
+      "page": 40,
+      "navigationMs": 370,
+      "canvases": 3,
+      "browserRssBytes": 1533747200,
+      "heap": 10226170
+    },
+    {
+      "page": 1450,
+      "navigationMs": 286,
+      "canvases": 3,
+      "browserRssBytes": 1545814016,
+      "heap": 10924692
+    },
+    {
+      "page": 92,
+      "navigationMs": 326,
+      "canvases": 3,
+      "browserRssBytes": 1560498176,
+      "heap": 11365215
+    },
+    {
+      "page": 265,
+      "navigationMs": 290,
+      "canvases": 3,
+      "browserRssBytes": 1588264960,
+      "heap": 11629261
+    },
+    {
+      "page": 438,
+      "navigationMs": 350,
+      "canvases": 3,
+      "browserRssBytes": 1592418304,
+      "heap": 7021899
+    },
+    {
+      "page": 611,
+      "navigationMs": 343,
+      "canvases": 3,
+      "browserRssBytes": 1596846080,
+      "heap": 10542839
+    },
+    {
+      "page": 784,
+      "navigationMs": 264,
+      "canvases": 3,
+      "browserRssBytes": 1628106752,
+      "heap": 7405720
+    },
+    {
+      "page": 957,
+      "navigationMs": 364,
+      "canvases": 3,
+      "browserRssBytes": 1644924928,
+      "heap": 9596676
+    },
+    {
+      "page": 1130,
+      "navigationMs": 449,
+      "canvases": 3,
+      "browserRssBytes": 1632985088,
+      "heap": 13440163
+    },
+    {
+      "page": 1303,
+      "navigationMs": 348,
+      "canvases": 3,
+      "browserRssBytes": 1626107904,
+      "heap": 9725937
+    },
+    {
+      "page": 1476,
+      "navigationMs": 259,
+      "canvases": 3,
+      "browserRssBytes": 1662173184,
+      "heap": 13037938
+    },
+    {
+      "page": 150,
+      "navigationMs": 203,
+      "canvases": 3,
+      "browserRssBytes": 1685721088,
+      "heap": 8577659
+    },
+    {
+      "page": 323,
+      "navigationMs": 279,
+      "canvases": 3,
+      "browserRssBytes": 1688883200,
+      "heap": 11585146
+    },
+    {
+      "page": 496,
+      "navigationMs": 256,
+      "canvases": 3,
+      "browserRssBytes": 1679429632,
+      "heap": 7440742
+    },
+    {
+      "page": 669,
+      "navigationMs": 288,
+      "canvases": 3,
+      "browserRssBytes": 1701539840,
+      "heap": 7184637
+    },
+    {
+      "page": 842,
+      "navigationMs": 284,
+      "canvases": 3,
+      "browserRssBytes": 1719349248,
+      "heap": 10708915
+    },
+    {
+      "page": 1015,
+      "navigationMs": 293,
+      "canvases": 3,
+      "browserRssBytes": 1687683072,
+      "heap": 7222935
+    },
+    {
+      "page": 1188,
+      "navigationMs": 250,
+      "canvases": 3,
+      "browserRssBytes": 1703313408,
+      "heap": 10637334
+    },
+    {
+      "page": 1361,
+      "navigationMs": 178,
+      "canvases": 3,
+      "browserRssBytes": 1714737152,
+      "heap": 6592904
+    },
+    {
+      "page": 35,
+      "navigationMs": 226,
+      "canvases": 3,
+      "browserRssBytes": 1724141568,
+      "heap": 9634186
+    },
+    {
+      "page": 208,
+      "navigationMs": 308,
+      "canvases": 3,
+      "browserRssBytes": 1732481024,
+      "heap": 12551612
+    },
+    {
+      "page": 381,
+      "navigationMs": 259,
+      "canvases": 3,
+      "browserRssBytes": 1746944000,
+      "heap": 8460806
+    },
+    {
+      "page": 554,
+      "navigationMs": 190,
+      "canvases": 3,
+      "browserRssBytes": 1722195968,
+      "heap": 7153221
+    },
+    {
+      "page": 727,
+      "navigationMs": 301,
+      "canvases": 3,
+      "browserRssBytes": 1773682688,
+      "heap": 10342512
+    },
+    {
+      "page": 900,
+      "navigationMs": 268,
+      "canvases": 3,
+      "browserRssBytes": 1747255296,
+      "heap": 7304763
+    },
+    {
+      "page": 1073,
+      "navigationMs": 161,
+      "canvases": 3,
+      "browserRssBytes": 1704697856,
+      "heap": 9258365
+    },
+    {
+      "page": 1246,
+      "navigationMs": 284,
+      "canvases": 3,
+      "browserRssBytes": 1755619328,
+      "heap": 12578417
+    },
+    {
+      "page": 1419,
+      "navigationMs": 304,
+      "canvases": 3,
+      "browserRssBytes": 1772376064,
+      "heap": 7278492
+    },
+    {
+      "page": 93,
+      "navigationMs": 196,
+      "canvases": 3,
+      "browserRssBytes": 1767002112,
+      "heap": 10268632
+    },
+    {
+      "page": 266,
+      "navigationMs": 178,
+      "canvases": 3,
+      "browserRssBytes": 1761210368,
+      "heap": 13098156
+    },
+    {
+      "page": 439,
+      "navigationMs": 339,
+      "canvases": 3,
+      "browserRssBytes": 1765945344,
+      "heap": 9715962
+    },
+    {
+      "page": 612,
+      "navigationMs": 278,
+      "canvases": 3,
+      "browserRssBytes": 1763983360,
+      "heap": 13052603
+    },
+    {
+      "page": 785,
+      "navigationMs": 218,
+      "canvases": 3,
+      "browserRssBytes": 1770475520,
+      "heap": 7257075
+    },
+    {
+      "page": 958,
+      "navigationMs": 189,
+      "canvases": 3,
+      "browserRssBytes": 1778810880,
+      "heap": 10122413
+    }
+  ]
+}

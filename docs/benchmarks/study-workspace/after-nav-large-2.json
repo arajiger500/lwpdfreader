@@ -1,0 +1,293 @@
+{
+  "date": "2026-11-26T05:59:51.778Z",
+  "browser": "Chromium on Linux; original synthetic PDF, not real iPad hardware",
+  "pages": 1500,
+  "fixture": "large.pdf",
+  "fixtureBytes": 1104935,
+  "firstPageMs": 1212,
+  "reopenMs": 403,
+  "zoomMs": 153,
+  "closedBrowserRssBytes": 690565120,
+  "samples": [
+    {
+      "page": 1000,
+      "navigationMs": 183,
+      "canvases": 3,
+      "browserRssBytes": 755634176,
+      "heap": 8221305
+    },
+    {
+      "page": 25,
+      "navigationMs": 116,
+      "canvases": 3,
+      "browserRssBytes": 735952896,
+      "heap": 9845526
+    },
+    {
+      "page": 1490,
+      "navigationMs": 82,
+      "canvases": 2,
+      "browserRssBytes": 719388672,
+      "heap": 9415494
+    },
+    {
+      "page": 700,
+      "navigationMs": 144,
+      "canvases": 3,
+      "browserRssBytes": 746004480,
+      "heap": 9217422
+    },
+    {
+      "page": 1,
+      "navigationMs": 100,
+      "canvases": 2,
+      "browserRssBytes": 730243072,
+      "heap": 8758860
+    },
+    {
+      "page": 1200,
+      "navigationMs": 113,
+      "canvases": 3,
+      "browserRssBytes": 756252672,
+      "heap": 11473586
+    },
+    {
+      "page": 40,
+      "navigationMs": 132,
+      "canvases": 3,
+      "browserRssBytes": 770981888,
+      "heap": 11574809
+    },
+    {
+      "page": 1450,
+      "navigationMs": 77,
+      "canvases": 3,
+      "browserRssBytes": 773025792,
+      "heap": 11260444
+    },
+    {
+      "page": 92,
+      "navigationMs": 190,
+      "canvases": 3,
+      "browserRssBytes": 783994880,
+      "heap": 11107969
+    },
+    {
+      "page": 265,
+      "navigationMs": 157,
+      "canvases": 3,
+      "browserRssBytes": 758620160,
+      "heap": 10558472
+    },
+    {
+      "page": 438,
+      "navigationMs": 85,
+      "canvases": 2,
+      "browserRssBytes": 739618816,
+      "heap": 10053620
+    },
+    {
+      "page": 611,
+      "navigationMs": 140,
+      "canvases": 3,
+      "browserRssBytes": 783667200,
+      "heap": 12809754
+    },
+    {
+      "page": 784,
+      "navigationMs": 123,
+      "canvases": 3,
+      "browserRssBytes": 778047488,
+      "heap": 6852049
+    },
+    {
+      "page": 957,
+      "navigationMs": 80,
+      "canvases": 2,
+      "browserRssBytes": 748154880,
+      "heap": 9451422
+    },
+    {
+      "page": 1130,
+      "navigationMs": 101,
+      "canvases": 2,
+      "browserRssBytes": 746311680,
+      "heap": 8502130
+    },
+    {
+      "page": 1303,
+      "navigationMs": 151,
+      "canvases": 3,
+      "browserRssBytes": 778674176,
+      "heap": 11319340
+    },
+    {
+      "page": 1476,
+      "navigationMs": 75,
+      "canvases": 2,
+      "browserRssBytes": 747339776,
+      "heap": 7656397
+    },
+    {
+      "page": 150,
+      "navigationMs": 104,
+      "canvases": 3,
+      "browserRssBytes": 788897792,
+      "heap": 6462463
+    },
+    {
+      "page": 323,
+      "navigationMs": 158,
+      "canvases": 3,
+      "browserRssBytes": 768823296,
+      "heap": 9200675
+    },
+    {
+      "page": 496,
+      "navigationMs": 149,
+      "canvases": 3,
+      "browserRssBytes": 772001792,
+      "heap": 11839390
+    },
+    {
+      "page": 669,
+      "navigationMs": 100,
+      "canvases": 3,
+      "browserRssBytes": 787030016,
+      "heap": 6672227
+    },
+    {
+      "page": 842,
+      "navigationMs": 104,
+      "canvases": 2,
+      "browserRssBytes": 747003904,
+      "heap": 9308417
+    },
+    {
+      "page": 1015,
+      "navigationMs": 148,
+      "canvases": 3,
+      "browserRssBytes": 788340736,
+      "heap": 12209293
+    },
+    {
+      "page": 1188,
+      "navigationMs": 74,
+      "canvases": 2,
+      "browserRssBytes": 761933824,
+      "heap": 6978465
+    },
+    {
+      "page": 1361,
+      "navigationMs": 77,
+      "canvases": 2,
+      "browserRssBytes": 750043136,
+      "heap": 9652300
+    },
+    {
+      "page": 35,
+      "navigationMs": 89,
+      "canvases": 2,
+      "browserRssBytes": 764129280,
+      "heap": 12236150
+    },
+    {
+      "page": 208,
+      "navigationMs": 81,
+      "canvases": 2,
+      "browserRssBytes": 761970688,
+      "heap": 6871470
+    },
+    {
+      "page": 381,
+      "navigationMs": 100,
+      "canvases": 3,
+      "browserRssBytes": 786472960,
+      "heap": 9546668
+    },
+    {
+      "page": 554,
+      "navigationMs": 137,
+      "canvases": 3,
+      "browserRssBytes": 781697024,
+      "heap": 12407675
+    },
+    {
+      "page": 727,
+      "navigationMs": 119,
+      "canvases": 3,
+      "browserRssBytes": 788975616,
+      "heap": 7153656
+    },
+    {
+      "page": 900,
+      "navigationMs": 123,
+      "canvases": 3,
+      "browserRssBytes": 771571712,
+      "heap": 10007805
+    },
+    {
+      "page": 1073,
+      "navigationMs": 85,
+      "canvases": 3,
+      "browserRssBytes": 787722240,
+      "heap": 12582258
+    },
+    {
+      "page": 1246,
+      "navigationMs": 91,
+      "canvases": 2,
+      "browserRssBytes": 748208128,
+      "heap": 6961621
+    },
+    {
+      "page": 1419,
+      "navigationMs": 167,
+      "canvases": 2,
+      "browserRssBytes": 745742336,
+      "heap": 9589780
+    },
+    {
+      "page": 93,
+      "navigationMs": 70,
+      "canvases": 2,
+      "browserRssBytes": 744423424,
+      "heap": 12088251
+    },
+    {
+      "page": 266,
+      "navigationMs": 71,
+      "canvases": 2,
+      "browserRssBytes": 763858944,
+      "heap": 7034235
+    },
+    {
+      "page": 439,
+      "navigationMs": 93,
+      "canvases": 2,
+      "browserRssBytes": 759865344,
+      "heap": 9631924
+    },
+    {
+      "page": 612,
+      "navigationMs": 75,
+      "canvases": 2,
+      "browserRssBytes": 746176512,
+      "heap": 12177275
+    },
+    {
+      "page": 785,
+      "navigationMs": 106,
+      "canvases": 3,
+      "browserRssBytes": 793399296,
+      "heap": 7105070
+    },
+    {
+      "page": 958,
+      "navigationMs": 76,
+      "canvases": 2,
+      "browserRssBytes": 760143872,
+      "heap": 9663450
+    }
+  ]
+}

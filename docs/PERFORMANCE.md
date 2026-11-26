@@ -1,5 +1,89 @@
 # Performance evaluation
 
+## Study workspace comparison · 2026-11-26
+
+The repeated comparison uses the PR #2 head `3dbfa45` and the study workspace application at `2a681a0`. The additional final checks and sustained run use `19b2987`, which adds file-picker sequencing and touch cancellation fixes. Both builds ran on the same shared Linux Codex Cloud environment with Chromium 156.0.8078.79, Node 24.22.3, a 1180 × 820 viewport and DPR 1. Each test started a clean browser context. Startup timing starts after browser launch. See [raw records](benchmarks/study-workspace/).
+
+### Document rendering
+
+Each fixture has 1,500 pages. Each build ran three separate imports and 40 distant jumps per run, using byte-identical fixtures. Import, local reopen and toolbar zoom are medians across the three trials. Jump median and p95 pool 120 per-fixture observations. Timings include Playwright overhead and page readiness includes the selectable text layer. They describe workload differences within this environment.
+
+| Fixture                |    Import, ms | Reopen, ms | Jump median, ms | Jump p95, ms | Toolbar zoom, ms | Peak aggregate RSS, MiB |
+| ---------------------- | ------------: | ---------: | --------------: | -----------: | ---------------: | ----------------------: |
+| Vector/text · 1.05 MiB | 1,366 → 1,385 |  554 → 915 |   118.0 → 108.5 |    215 → 189 |        124 → 153 |               765 → 757 |
+| Illustrated · 163 MiB  | 4,449 → 3,854 |  396 → 351 |   205.5 → 174.5 |    411 → 315 |        299 → 161 |           1,477 → 1,458 |
+| Illustrated · 327 MiB  | 6,431 → 6,429 |  932 → 867 |   280.0 → 273.0 |    415 → 384 |        216 → 271 |           1,704 → 1,657 |
+
+The single-reopen timings for the vector PDF varied from 503–949 ms before and 403–976 ms after. The separate 18-cycle test showed similar medians. The library now waits for the previous PDF worker to close before accepting another document. Toolbar zoom reports when the new raster and text are ready. The vector and 327 MiB fixtures took longer at that endpoint, while same-rotation updates kept the old raster visible.
+
+The 163 MiB fixture embeds 64 unique JPEGs. The larger, approximately 327 MiB fixture reuses 128 deterministic JPEGs across two figure panels per page and adds a longer text block. Both are synthetic. They exercise figure decoding and text layout while sharing more image data than most real textbooks.
+
+### Activity, memory and ink
+
+The efficiency test samples six close/reopen cycles per trial, 1.5 seconds of settled idle time, 60 injected pen moves, and 30 injected two-finger moves. It records CDP TaskDuration, per-process RSS and CPU time, main and worker JavaScript heaps, backing stores, mounted canvas pixels, long tasks, frame intervals, SVG draft mutation times, and completed IndexedDB read/write transactions. The transaction instrument counts store participation, so one ink transaction appears under both ink and inkDeleted. Neither the mutation latency nor the rAF intervals measure touchscreen-to-display or Apple Pencil latency.
+
+| Vector fixture proxy                                            | Before → After |
+| --------------------------------------------------------------- | -------------: |
+| Cold navigation to the library, median ms                       |      289 → 252 |
+| Reopen across 18 repeated cycles, median ms                     |      367 → 365 |
+| Main renderer task time during the 1.5 s idle sample, median ms |      7.4 → 3.6 |
+| Pen event to live SVG mutation, p95 ms                          |      0.8 → 1.4 |
+| Main JS heap after reopen, median MiB                           |      9.3 → 9.8 |
+| PDF worker JS heap after reopen, median MiB                     |      6.8 → 8.7 |
+| Initial JS, kB                                                  |   132.4 → 83.6 |
+| Initial JS, gzip kB                                             |    47.8 → 30.8 |
+| Offline cache payload, MiB                                      |  5.384 → 5.412 |
+
+Idle samples recorded zero page-rendered events and zero completed write transactions in both builds. One ink gesture used one completed ink transaction in both builds. Each open-cycle snapshot showed one PDF worker. Immediate-close snapshots sometimes preceded termination. The heavy one-page worker heap sample was 6.9 → 6.6 MiB. Long-task counts across the three full detailed vector journeys were 6 before and 4 after, including boot and import.
+
+In Pen mode, the same injected pinch left the baseline page width unchanged. The new viewer scaled it from 1,133 to 1,733 CSS pixels with zero completed page renders during motion and one after release. Median release-to-ready was 93 ms (range 90–109 ms). Gesture rAF intervals reached 16.7 ms at p95 in this headless run. Mounted canvas allocation rose from 1,705,978 to 3,928,144 pixels as the page occupied more layout space.
+
+The short-stroke SVG mutation p95 increased by about 0.6 ms. The timed trace has 60 moves and does not exercise the long-stroke path bound. Worker heap samples moved upward on the vector fixture while the illustrated worker spot check moved downward. Both sample the browser’s current GC phase without forced collection.
+
+The cold-start trials are too few to establish a reliable startup latency improvement. The reduction in initial JS comes from loading the reader separately. All application JS and the editor still occupy space in the offline cache, which grows with the new features.
+
+The detailed logs keep browser, renderer, and GPU-process RSS separate. Summing their RSS can double-count shared mappings. GPU-process RSS provides a process trend and excludes a reliable tally of graphics memory. The PDF worker isolate and ArrayBuffer backing stores are separate from main-thread JS. PDF.js can retain visited range data and native image buffers even after the reader releases its own canvases. The application keeps at most nine mounted page canvases and up to two in-flight staging canvases. Each has a 4-million-pixel cap.
+
+| Dense workload       | Backup restore, median ms | Annotated-document reopen, median ms |
+| -------------------- | ------------------------: | -----------------------------------: |
+| 5,000 highlights     |             1,057 → 1,013 |                            458 → 949 |
+| 5,000 strokes on PDF |             2,385 → 2,467 |                            416 → 418 |
+
+The highlights-only reopen median was slower. The test includes reading and projecting saved annotations as well as raster and text readiness, and the three after runs ranged from 503 to 1,011 ms. The dense-ink reopen and the longer repeated vector cycle timings stayed close to the baseline. The 5,000-stroke board loaded in 363 ms from the marker click to the ink layer reporting readiness. It mounted 500 nearby strokes and no board canvas. The test panned with Pen selected and preserved the stroke count. This scenario has no baseline feature to compare.
+
+A two-minute single-page session on the 327 MiB synthetic textbook visited 218 distant page targets and saved 654 strokes. The last page retained its three strokes after a local reopen. Periodic samples recorded at most 1 mounted canvas (355,796 pixels) and aggregate browser RSS from 1,243 to 1,607 MiB. This duration captures repeated decode and annotation activity. Longer real-device sessions remain necessary for allocator, thermal and storage behavior.
+
+The final-build spot checks recorded 165 ms median distant navigation and 156 ms toolbar zoom on the 163 MiB fixture. The final-build vector pinch recorded no completed renders during motion and one after release. [Spot-check records](benchmarks/study-workspace/)
+
+### Stabilization and design choices
+
+The [synthetic 120 Hz trace](benchmarks/study-workspace/stabilization.json) compares the previous 0.65 gain, the four new levels, and one configured One Euro filter. Medium reduced mean-centered slow-motion jitter from 0.446 to 0.343 CSS pixels, fast-corner maximum error from 1.62 to 1.20 pixels, and the largest pressure step from 0.70 to 0.37. The One Euro variant further reduced mean-centered jitter to 0.223 pixels with greater overall slow-motion error on this trace. High trades more positional lag for stronger filtering. These figures describe one deterministic signal, including its specified filter tuning.
+
+The reader keeps the vector SVG and existing analytic eraser. Long live strokes seal older geometry in 192-sample paths, reducing the amount of geometry regenerated per frame. Whiteboards mount only the nearby SVG geometry. A Canvas rewrite or tiled PDF renderer would add another cache and compositing path. The observed viewport footprint and existing bounds favored a retained-raster swap, reusable text layers and prompt cancellation of obsolete work. The Rust/WASM interface and production dependencies remain unchanged.
+
+The library loads the reader, PDF engine and editor as needed. Workbox still precaches their assets for offline startup. Native drawing-mode scroll branches, the recursive scroll timeout, eager outline loading, and redundant eraser preview regeneration were removed. Pausing page jobs while hidden and stopping application work between input events are expected to reduce avoidable CPU/GPU work. The Linux measurements do not establish device battery drain, Pencil latency, sustained hardware FPS or Safari graphics memory. [Physical iPad checklist](STUDY-WORKSPACE.md)
+
+### Reproduce
+
+```sh
+npm ci
+npm run build
+npm run fixtures:heavy
+LWPDF_FIXTURE_IMAGES=128 npm run fixtures:heavy
+
+npm run test:browser -- --grep 'large PDF benchmark'
+LWPDF_BENCHMARK_FILE=heavy.pdf npm run test:browser -- --grep 'large PDF benchmark'
+LWPDF_BENCHMARK_FILE=illustrated.pdf npm run test:browser -- --grep 'large PDF benchmark'
+LWPDF_EFFICIENCY=1 npm run test:browser -- efficiency.spec.ts --grep 'efficiency proxies'
+LWPDF_BENCHMARK_FILE=illustrated.pdf LWPDF_SUSTAINED_MS=120000 \
+  npm run test:browser -- efficiency.spec.ts --grep sustained
+node --experimental-transform-types scripts/benchmark-stabilization.mjs
+```
+
+Repeat each timing scenario independently. Copy generated JSON from `test-results` before another run clears it. For the baseline, build the checkout at `3dbfa45`, use the same fixture files and copy the opt-in `efficiency.spec.ts` harness into that checkout. Use CI=1 to avoid reusing an open preview server. Keep tests sequential and record the browser version, display scale, and machine. The whiteboard scenario has no baseline counterpart.
+
+## Historical first-release measurements
+
 These are measurements from headless Chromium 156.0.8078.79 on a shared Linux Codex Cloud machine on 2026-11-15, at 1180×820 with DPR 1. They are not iPad Air/Safari results or a device performance guarantee. Raw records are in [benchmarks](benchmarks/).
 
 ## Method

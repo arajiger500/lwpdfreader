@@ -70,3 +70,5 @@ LWPDF_SCREENSHOTS=1 npm run test:browser -- study.spec.ts --grep 'capture worksp
 ```
 
 The gesture suite uses Chromium CDP to deliver real browser touch event sequences and cover all toolbar modes, simultaneous translation/scaling, pointer cancellation, capture loss, and a dense board. The cross-browser workflows exercise pointer drawing, rotation, linked board persistence and shared-annotation rendering. [iPad-specific checks](STUDY-WORKSPACE.md)
+
+Playwright WebKit uses a disposable persistent profile for these scenarios because the Linux WPE ephemeral context rejects IndexedDB Blob writes. The production storage implementation is exercised with real blobs. The alignment check compares observed selection Range rectangles across zoom and rotation. This avoids a font-dependent difference between a text wrapper and the selected text on Linux WebKit.

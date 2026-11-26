@@ -4,17 +4,19 @@ The application has no server-side data path. Vite produces a static Svelte 5/Ty
 
 ## Boundaries
 
-| Area                               | Responsibility                                                                                       |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `App.svelte`, `Library.svelte`     | Startup, library import/removal, theme, backup commands, user-visible errors                         |
-| `Reader.svelte`                    | Reading session, annotation mutation commands, save status, lifecycle progress flush                 |
-| `Viewer.svelte`, `virtual.ts`      | Logical scroll space, page offsets, measured dimensions, bounded live window, navigation generations |
-| `PdfPage.svelte`, `renderQueue.ts` | Canvas/text-layer rendering, cancellation, canvas release, normalized geometry projection            |
-| `pdf.ts`, `hash.worker.ts`         | Local Blob range transport, PDF.js worker, outline resolution, incremental SHA-256 worker            |
-| `storage.ts`                       | Versioned IndexedDB schema, transactions, separate Blob store, per-document annotation index         |
-| `backup.ts`                        | Portable JSON schema, complete validation, atomic import/export snapshots                            |
-| `progress.ts`                      | Serialized writes, 600 ms coalescing, retry state, prevention of stale failed writes                 |
-| `core/src/lib.rs`, `core.ts`       | Rust geometry validation, canonical serialization, page grouping, geometry hit testing via WASM      |
+| Area                                         | Responsibility                                                                                       |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `App.svelte`, `Library.svelte`               | Startup, library import/removal, theme, backup commands, user-visible errors                         |
+| `Reader.svelte`                              | Reading session, annotation mutation commands, save status, lifecycle progress flush                 |
+| `Viewer.svelte`, `virtual.ts`                | Logical scroll space, page offsets, measured dimensions, bounded live window, navigation generations |
+| `PdfPage.svelte`, `renderQueue.ts`           | Canvas/text-layer rendering, cancellation, canvas release, normalized geometry projection            |
+| `pdf.ts`, `hash.worker.ts`                   | Local Blob range transport, PDF.js worker, outline resolution, incremental SHA-256 worker            |
+| `storage.ts`                                 | Versioned IndexedDB schema, transactions, separate Blob store, per-document annotation index         |
+| `backup.ts`                                  | Portable JSON schema, complete validation, atomic import/export snapshots                            |
+| `ink-touch.ts`, `InkLayer.svelte`            | Pointer arbitration, provisional stroke capture, filtered vectors and live SVG updates               |
+| `whiteboard-storage.ts`, `Whiteboard.svelte` | PDF links, board metadata and viewport, vector culling, transactional deletion                       |
+| `progress.ts`                                | Serialized writes, 600 ms coalescing, retry state, prevention of stale failed writes                 |
+| `core/src/lib.rs`, `core.ts`                 | Rust geometry validation, canonical serialization, page grouping, geometry hit testing via WASM      |
 
 ## PDF lifecycle and memory
 
@@ -32,7 +34,7 @@ Scroll-driven state updates are coalesced into a single frame, and the mounted w
 
 The PDF pinch previews a matrix on the shared page surface once per visual frame. The canvas, text, highlights, ink, and link markers move together. The viewer records a page-relative point at the initial midpoint and restores it at the final midpoint using the committed layout. It pauses raster work during pinch and while the document is hidden or covered by the whiteboard editor. At a physical scroll boundary, the final position is clamped to the document.
 
-The whiteboard uses the same ink session, filter, vector format, and eraser. A viewport-sized SVG projects a movable view into a 32,768 × 32,768 unit coordinate space. A grid indexes stroke bounds in board space and queries the visible area with a margin. A separate list holds strokes with exceptionally wide bounds to limit cell duplication. The whiteboard mounts only on demand. Closing it releases its component and in-memory vectors while keeping the PDF viewer mounted.
+The whiteboard uses the same ink session, filter, vector format, and eraser. A viewport-sized SVG projects a movable view into a 32,768 × 32,768 unit coordinate space. A grid indexes stroke bounds in board space and queries the visible area with a margin. A separate list holds strokes with exceptionally wide bounds to limit cell duplication. The whiteboard mounts only on demand. It loads the board vectors as one indexed ink page; the renderer mounts only nearby vector paths. Closing it releases its component and in-memory vectors while keeping the PDF viewer mounted.
 
 ## Coordinate contract
 
@@ -44,15 +46,15 @@ Selected text provides a human-readable anchor along with page, content fingerpr
 
 ## Persistence and recovery
 
-IndexedDB v3 retains the original document, Blob, annotation, setting, and v2 ink stores. It adds two indexed stores for whiteboards and their links. Existing records remain in place. [Migration and merge semantics](STUDY-WORKSPACE.md) Annotation format and backup envelope have independent explicit versions. Unsupported future backup versions fail closed.
+IndexedDB v3 retains the original document, Blob, annotation, setting, and v2 ink stores. It adds two indexed stores for whiteboards and their links. Existing records remain in place. Annotation format and backup envelope have independent explicit versions. Unsupported future backup versions fail closed. [Migration and merge semantics](STUDY-WORKSPACE.md)
 
 All persistent mutations await transaction completion. Annotation UI state changes only after commit. Progress writes are serialized and coalesced without indefinite debounce starvation. Failed positions remain pending unless superseded; errors reach the UI. Notes save after 450 ms, blur and backgrounding. Progress additionally flushes on visibility changes, pagehide and document switching; unloading is not the sole persistence mechanism. Browser process termination may lose the final debounce interval or an uncommitted transaction; committed IDB transactions survive normal reloads.
 
-Import fingerprints deduplicate binary-identical documents. A duplicate import retains existing annotations and progress. Removal atomically deletes file, metadata and annotations. Backups take a consistent read transaction snapshot. Restore validates the full envelope and every annotation through Rust before creating a transaction; identity/page-count conflicts abort all changes. Newer timestamps win for matching IDs. Missing PDF metadata is preserved as unavailable and reattached by matching SHA-256 on import. Ink, whiteboard and anchor tombstones participate in backup merges. Deletes of legacy text annotations still use the original additive merge semantics. Multiple simultaneous editing tabs are unsupported; no cross-tab conflict protocol is implemented.
+Import fingerprints deduplicate binary-identical documents. A duplicate import retains existing annotations and progress. Removal atomically deletes file, metadata and annotations and tombstones the PDF links. Backups take a consistent read transaction snapshot. Restore validates the full envelope and every annotation through Rust before creating a transaction; identity/page-count conflicts abort all changes. Newer timestamps win for matching live records. Permanent board and link tombstones take precedence. Missing PDF metadata is preserved as unavailable and reattached by matching SHA-256 on import. Ink, whiteboard and anchor tombstones participate in backup merges. Deletes of legacy text annotations still use the original additive merge semantics. Multiple simultaneous editing tabs are unsupported; no cross-tab conflict protocol is implemented.
 
 ## Offline and updates
 
-The build precaches all required JS, CSS, worker MJS, core WASM, PDF decoding WASM, CMaps, fonts and icons (~5.2 MiB in the measured build). Fonts and maps are copied from the installed PDF.js package at npm postinstall for both dev and production. No CDN is used. Imported documents are never service-worker cache entries. No service-worker handler modifies IndexedDB. A waiting update is applied explicitly from the library, keeping it out of an active reading session. The original imported PDF is never modified.
+The build precaches all required JS, CSS, worker MJS, core WASM, PDF decoding WASM, CMaps, fonts and icons (about 5.4 MiB in the study-workspace build). Fonts and maps are copied from the installed PDF.js package at npm postinstall for both dev and production. No CDN is used. Imported documents are never service-worker cache entries. No service-worker handler modifies IndexedDB. A waiting update is applied explicitly from the library, keeping it out of an active reading session. The original imported PDF is never modified.
 
 Note editing uses a shared in-flight save promise that drains new edits arriving during a write. Closing the editor/sidebar, selecting another annotation, returning to the library and exporting a backup await that promise. A failed save keeps the editor and its draft open for retry. Intentional deletion cancels draft autosaving so an outstanding save cannot recreate a deleted annotation. This protects normal navigation; force termination still cannot guarantee the final uncommitted characters.
 
